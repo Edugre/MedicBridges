@@ -1,0 +1,13 @@
+Neon connection strings
+
+# main, pooled
+postgresql://neondb_owner:npg_rRdMq89uLBof@ep-crimson-glade-amdu2or4-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# main, direct
+postgresql://neondb_owner:npg_rRdMq89uLBof@ep-crimson-glade-amdu2or4.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# staging, pooled
+postgresql://neondb_owner:npg_rRdMq89uLBof@ep-patient-snow-amfmp07d-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# staging, direct
+postgresql://neondb_owner:npg_rRdMq89uLBof@ep-patient-snow-amfmp07d.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
