@@ -36,6 +36,7 @@ class Site(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     state: Mapped[str | None] = mapped_column(String(2), nullable=True)
     zip_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
     phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    npi: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
 
     location: Mapped[WKBElement | None] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False),

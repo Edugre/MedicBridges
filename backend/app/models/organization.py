@@ -21,6 +21,7 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     legal_name: Mapped[str] = mapped_column(Text, nullable=False)
     npi: Mapped[str | None] = mapped_column(String(10), unique=True, nullable=True)
     opais_id: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
+    bhcmis_org_id: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
 
     sites: Mapped[list["Site"]] = relationship(
         back_populates="organization",
