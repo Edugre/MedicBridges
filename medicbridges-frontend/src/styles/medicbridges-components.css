@@ -1,0 +1,136 @@
+/* medicbridges-components.css */
+
+/* Button Utility */
+.mb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.75rem;
+  font-weight: 500;
+  border-radius: var(--mb-radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.mb-btn-primary {
+  background-color: var(--mb-accent);
+  color: white;
+  box-shadow: var(--mb-shadow-sm);
+}
+
+.mb-btn-primary:hover {
+  background-color: var(--mb-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--mb-shadow-md);
+}
+
+.mb-btn-secondary {
+  background-color: var(--mb-primary);
+  color: white;
+  box-shadow: var(--mb-shadow-sm);
+}
+
+.mb-btn-secondary:hover {
+  background-color: var(--mb-primary-hover);
+  transform: translateY(-1px);
+}
+
+.mb-btn-outline {
+  background-color: transparent;
+  color: var(--mb-text-primary);
+  border: 1px solid var(--mb-border);
+}
+
+.mb-btn-outline:hover {
+  background-color: var(--mb-bg-surface-hover);
+}
+
+/* Card Utility */
+.mb-card, .mb-bento-card {
+  background-color: var(--mb-bg-surface);
+  border-radius: var(--mb-radius-lg);
+  box-shadow: var(--mb-shadow-sm);
+  padding: 2rem;
+  border: 1px solid var(--mb-border);
+  transition: box-shadow 0.3s ease;
+}
+
+.mb-bento-card:hover {
+  box-shadow: var(--mb-shadow-md);
+}
+
+/* Form Inputs */
+.mb-input-group {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mb-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--mb-text-primary);
+  font-size: 0.95rem;
+}
+
+.mb-input, .mb-select, .mb-textarea {
+  padding: 0.75rem 1rem;
+  border-radius: var(--mb-radius-sm);
+  border: 1px solid var(--mb-border);
+  background-color: var(--mb-bg-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--mb-text-primary);
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.mb-input:focus, .mb-select:focus, .mb-textarea:focus {
+  outline: none;
+  border-color: var(--mb-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Checkbox/Radio */
+.mb-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--mb-text-primary);
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+/* Image Placeholder */
+.image-placeholder {
+  background-color: var(--mb-bg-primary);
+  border: 2px dashed var(--mb-border);
+  border-radius: var(--mb-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mb-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 200px;
+}
+
+/* Glassmorphism Panel */
+.mb-glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--mb-radius);
+}
+
+@media (prefers-color-scheme: dark) {
+  .mb-glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}

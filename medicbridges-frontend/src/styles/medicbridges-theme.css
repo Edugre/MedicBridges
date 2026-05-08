@@ -1,0 +1,45 @@
+/* medicbridges-theme.css */
+:root {
+  /* MedicBridges Mint Green Palette */
+  --mb-primary: #10b981; /* Primary Mint/Emerald Green */
+  --mb-primary-hover: #059669;
+  --mb-accent: #0f172a; /* Dark charcoal/black for primary buttons and text */
+  --mb-accent-hover: #1e293b;
+
+  /* Backgrounds */
+  --mb-bg-primary: #f8fafc; /* Very light off-white */
+  --mb-bg-surface: #ffffff;
+  --mb-bg-surface-hover: #f1f5f9;
+
+  /* Text Colors */
+  --mb-text-primary: #0f172a; /* Near black */
+  --mb-text-secondary: #64748b; /* Soft gray */
+  --mb-text-muted: #94a3b8;
+
+  /* Borders & Shadows */
+  --mb-border: #e2e8f0;
+  --mb-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --mb-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --mb-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+
+  /* Radius (More rounded, pill-like, bento style) */
+  --mb-radius-sm: 8px;
+  --mb-radius: 16px;
+  --mb-radius-lg: 24px;
+  --mb-radius-pill: 9999px;
+}
+
+/* Optional Dark Mode - currently auto based on system, can be toggled via a class later */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mb-bg-primary: #0f172a;
+    --mb-bg-surface: #1e293b;
+    --mb-bg-surface-hover: #334155;
+    
+    --mb-text-primary: #e2e8f0;
+    --mb-text-secondary: #94a3b8;
+    --mb-text-heading: #f8fafc;
+    
+    --mb-border: #334155;
+  }
+}

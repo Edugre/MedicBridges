@@ -5,6 +5,10 @@
 .env.staging
 .env.*.local
 
+# Node / Frontend
+node_modules/
+dist/
+
 # Postgres data volume backups
 *.sql.gz
 *.dump
