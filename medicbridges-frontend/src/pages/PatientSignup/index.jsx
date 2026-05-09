@@ -7,7 +7,7 @@ const PatientSignup = () => {
     <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '800px', animation: 'fadeIn 0.6s ease-out' }}>
       
       <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--mb-primary)', borderRadius: 'var(--mb-radius-pill)', fontWeight: 600, marginBottom: '1rem' }}>
+        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem' }}>
           Free — Always
         </div>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Create Your Patient Profile</h1>
@@ -21,7 +21,7 @@ const PatientSignup = () => {
           
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Personal Information</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">First Name *</label>
               <input type="text" className="mb-input" required />
@@ -32,7 +32,7 @@ const PatientSignup = () => {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">Email *</label>
               <input type="email" className="mb-input" required />
@@ -43,7 +43,7 @@ const PatientSignup = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">ZIP Code *</label>
               <input type="text" className="mb-input" required />
@@ -63,13 +63,13 @@ const PatientSignup = () => {
               <option value="medicaid">I have Medicaid</option>
               <option value="medicare">I have Medicare</option>
               <option value="aca">I have Marketplace / ACA insurance</option>
-              <option value="cant_afford">I have insurance but can’t afford copays</option>
-              <option value="unsure">I’m not sure</option>
+              <option value="cant_afford">I have insurance but can't afford copays</option>
+              <option value="unsure">I'm not sure</option>
             </select>
           </div>
 
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Care You Need</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '2rem' }}>
+          <div className="checkbox-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '2rem' }}>
             <label className="mb-checkbox-label"><input type="checkbox" /> Primary Care</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Dental</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Mental Health / Therapy</label>
@@ -109,20 +109,27 @@ const PatientSignup = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <button type="submit" className="mb-btn mb-btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
+            <button type="submit" className="mb-btn mb-btn-secondary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
               Create My Profile — Find Care Now <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} />
             </button>
             <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.85rem', maxWidth: '500px', marginBottom: '1.5rem' }}>
-              Your information is private and never sold. MedicBridges is free for patients, always. By registering you agree to our <Link to="/privacy" style={{ textDecoration: 'underline' }}>Privacy Policy</Link>.
+              Your information is private and never sold. By registering you agree to our <Link to="/privacy" style={{ textDecoration: 'underline' }}>Privacy Policy</Link>.
             </p>
             
-            <Link to="/clinic-signup" style={{ fontSize: '0.95rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--mb-primary)' }}>
+            <Link to="/clinic-signup" style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--mb-accent)' }}>
               <User size={16} /> Are you a clinic? Register your clinic here
             </Link>
           </div>
 
         </form>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .form-row { grid-template-columns: 1fr !important; }
+          .checkbox-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Serif+Text:ital@0;1&display=swap');
 
 /* globals.css */
 * {
@@ -8,7 +8,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'DM Serif Text', 'DM Serif Display', Georgia, serif;
   background-color: var(--mb-bg-primary);
   color: var(--mb-text-primary);
   line-height: 1.6;
@@ -17,19 +17,24 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-weight: 400;
   color: var(--mb-text-heading);
   line-height: 1.2;
 }
 
+p, span, a, li, label, div, button, input, select, textarea, blockquote {
+  font-family: 'DM Serif Text', 'DM Serif Display', Georgia, serif;
+}
+
 a {
-  color: var(--mb-primary);
+  color: var(--mb-accent);
   text-decoration: none;
   transition: color 0.2s ease-in-out;
 }
 
 a:hover {
-  color: var(--mb-primary-hover);
+  color: var(--mb-accent-hover);
 }
 
 .page-container {
@@ -48,4 +53,33 @@ a:hover {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   Mobile:  max-width 640px
+   Tablet:  641px – 1024px
+   Desktop: 1025px+
+   ======================================== */
+
+/* ---------- Tablet (iPad) ---------- */
+@media (max-width: 1024px) {
+  .page-container {
+    padding: 1.5rem;
+  }
+
+  h1 { font-size: 2.5rem !important; }
+  h2 { font-size: 2rem !important; }
+  h3 { font-size: 1.15rem !important; }
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  .page-container {
+    padding: 1rem;
+  }
+
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.6rem !important; }
+  h3 { font-size: 1.05rem !important; }
 }
