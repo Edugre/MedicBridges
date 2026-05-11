@@ -40,7 +40,14 @@ async def _load_latest_raw_rows(
 async def _upsert_organizations(
     session: AsyncSession, rows: Iterable[dict]
 ) -> dict[str, uuid.UUID]:
-    """Dedupe rows by BHCMIS Org ID, upsert, and return {bhcmis_org_id: id}."""
+    """Dedupe rows by BHCMIS Org ID, upsert, and return {bhcmis_org_id: id}.
+
+    Note: HRSA's site-delivery CSV does not expose an organization-level NPI;
+    the only NPI column is "FQHC Site NPI Number", which is per-site and is
+    written to sites.npi in _upsert_sites. organizations.npi is intentionally
+    left unset here and is expected to be populated from another source
+    (e.g. NPPES) by a separate transform.
+    """
     seen: dict[str, dict] = {}
     for row in rows:
         bhcmis_org_id = (row.get("BHCMIS Organization Identification Number") or "").strip()
@@ -124,6 +131,7 @@ async def _upsert_sites(
                 "phone": stmt.excluded.phone,
                 "npi": stmt.excluded.npi,
                 "location": stmt.excluded.location,
+                "updated_at": func.now(),
             },
         )
         await session.execute(stmt)
