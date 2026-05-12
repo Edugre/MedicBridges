@@ -69,3 +69,19 @@ async def test_org_npi_stays_null(ingested: str, db_session: AsyncSession):
     await transform(ingested)
     orgs = (await db_session.execute(select(Organization))).scalars().all()
     assert all(o.npi is None for o in orgs)
+
+
+async def test_sites_have_npi(ingested: str, db_session: AsyncSession):
+    await transform(ingested)
+    sites = (await db_session.execute(select(Site))).scalars().all()
+    assert all(s.npi is not None for s in sites)
+
+
+async def test_site_npi_values(ingested: str, db_session: AsyncSession):
+    await transform(ingested)
+    sites = (await db_session.execute(select(Site))).scalars().all()
+    assert {s.bhcmis_id: s.npi for s in sites} == {
+        "SITE001": "1111111111",
+        "SITE002": "2222222222",
+        "SITE003": "3333333333",
+    }

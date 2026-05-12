@@ -9,7 +9,7 @@ from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import SessionLocal, dispose_engine
-from app.models import Organization, Site
+from app.models import NpiMatchCandidate, Organization, Site
 
 logger = logging.getLogger("verify_hrsa_load")
 
@@ -58,15 +58,35 @@ async def verify(
         n_states = await _scalar_int(
             session, select(func.count(distinct(Site.state))).select_from(Site)
         )
+        n_with_npi = await _scalar_int(
+            session,
+            select(func.count())
+            .select_from(Site)
+            .where(Site.npi.is_not(None)),
+        )
+        n_promoted = await _scalar_int(
+            session,
+            select(func.count(distinct(NpiMatchCandidate.site_id)))
+            .select_from(NpiMatchCandidate)
+            .where(NpiMatchCandidate.status == "promoted"),
+        )
 
     geocode_pct = (n_with_loc / n_sites) if n_sites else 0.0
+    npi_pct = (n_with_npi / n_sites) if n_sites else 0.0
+    promoted_pct = (n_promoted / n_sites) if n_sites else 0.0
 
     logger.info(
-        "orgs=%s sites=%s sites_with_location=%s (%.2f%%) distinct_states=%s orphan_sites=%s",
+        "orgs=%s sites=%s sites_with_location=%s (%.2f%%) "
+        "sites_with_npi=%s (%.2f%%) npi_via_nppes=%s (%.2f%%) "
+        "distinct_states=%s orphan_sites=%s",
         n_orgs,
         n_sites,
         n_with_loc,
         geocode_pct * 100,
+        n_with_npi,
+        npi_pct * 100,
+        n_promoted,
+        promoted_pct * 100,
         n_states,
         n_orphans,
     )

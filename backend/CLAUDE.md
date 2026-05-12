@@ -26,6 +26,14 @@ uv run python -m app.scripts.transform_hrsa_sites [--source-file FILENAME]
 uv run python -m app.scripts.verify_hrsa_load [--min-orgs N] [--min-sites N]
 ```
 
+**NPPES NPI enrichment pipeline** (run from `backend/`, require DATABASE_URL in env):
+
+```bash
+uv run python -m app.scripts.ingest_nppes [--csv PATH] [--replace]
+uv run python -m app.scripts.match_nppes_sites [--replace]
+uv run python -m app.scripts.promote_npi_matches [--dry-run]
+```
+
 **Alembic** (must use `DATABASE_URL_DIRECT`, not the pooler URL):
 
 ```bash
@@ -55,8 +63,10 @@ Tests live in `app/tests/` and split into two layers:
 
 **Integration** (`app/tests/integration/`) — require a live PostgreSQL database. Create `.env.test` at the repo root (same format as `.env.example`) pointing at a test database with `postgis` and `pg_trgm` enabled. Alembic migrations run automatically once per test session; all tables are truncated between tests.
 - `test_ingest.py` — staging rows, `IngestRun` catalog, `--replace` semantics
-- `test_transform.py` — org/site upserts, geocoding, `updated_at` refresh, snapshot isolation
+- `test_transform.py` — org/site upserts, geocoding, NPI backfill, `updated_at` refresh, snapshot isolation
 - `test_api.py` — `/healthz` and `/healthz/db` endpoints
+
+**Python 3.14 asyncio requirement**: `pyproject.toml` sets both `asyncio_default_fixture_loop_scope = "session"` and `asyncio_default_test_loop_scope = "session"`. Both are required — without the test scope setting, async fixtures and tests run in different event loops and asyncpg raises "Future attached to a different loop". The `conftest.py` teardown uses `asyncio.run(engine.dispose())` rather than `asyncio.get_event_loop().run_until_complete(...)` because Python 3.14 no longer implicitly creates an event loop. Do not change these without understanding the cross-loop implications.
 
 ## Architecture
 
@@ -79,6 +89,10 @@ Shared mixins in `app/db/types.py`:
 
 `updated_at` is only refreshed by ORM-level saves. Upsert statements that bypass the ORM must include `"updated_at": func.now()` in the `set_` dict explicitly (see `_flush_site_chunk` in `transform_hrsa_sites.py`).
 
+`IngestRun` tracks pipeline attempts with `status` (`running` → `completed` / `failed`), `rows_read`, `rows_passed_filter`, `row_count`, and a `stats` JSONB column for per-script metrics (tier breakdowns, conflict counts, etc.). Scripts commit the `IngestRun` row before processing begins so in-flight runs are observable, then update it to `completed` or `failed` at the end.
+
+`Index()` names in model files use plain strings (`Index("ix_table_col", "col")`). `op.f(...)` is Alembic-only — do not use it inside model class definitions.
+
 ### HRSA data pipeline
 
 Three-stage pipeline for loading HRSA Health Center site data:
@@ -93,8 +107,50 @@ Uses a **two-session design**: `read_session` holds a server-side cursor (via `s
 
 `organizations.npi` is intentionally left `NULL` by this transform. The HRSA site-delivery CSV only has per-site NPI (`FQHC Site NPI Number` → `sites.npi`); org-level NPI is expected to come from a separate NPPES transform.
 
+`sites.npi` is **not unique**. The HRSA dataset has duplicate NPI values — the same NPI can appear at multiple physical locations for a single credentialed provider. A unique constraint was applied and then reverted (see migration `b5f2c3d4e6a1`); do not re-add it. After NPPES promotion, NPI coverage reaches ~59% of sites; the remaining ~41% have no match in the FQHC taxonomy slice of NPPES and will need a different enrichment strategy.
+
 **Stage 3 — Verify** (`verify_hrsa_load.py`):  
-Data-quality checks: org count ≥ 1000, site count ≥ 15000, geocoded ratio ≥ 95%, distinct states ≥ 50, zero orphan sites. Exits non-zero on failure.
+Data-quality checks: org count ≥ 1000, site count ≥ 15000, geocoded ratio ≥ 95%, distinct states ≥ 50, zero orphan sites. Exits non-zero on failure. Also reports `sites_with_npi` (total NPI coverage) and `npi_via_nppes` (sites whose NPI came from NPPES promotion) as informational metrics.
+
+### NPPES NPI enrichment pipeline
+
+Three-stage pipeline that matches HRSA FQHC sites against the CMS NPPES provider registry and writes confirmed NPIs back to `sites.npi`.
+
+**Stage 1 — Ingest** (`ingest_nppes.py`):  
+Filters the 9.5M-row NPPES CSV to the ~18K FQHC organisations (Entity Type 2, taxonomy `261QF0400X`, no deactivation date) and stages 42 selected columns as JSONB into `raw_nppes_providers`. Pass rate is ~0.19% (18,104 of 9,551,447 rows). Records `rows_read`, `rows_passed_filter`, and `row_count` in `ingest_runs`. `--replace` wipes prior staging rows.
+
+**Stage 2 — Match** (`match_nppes_sites.py`):  
+Loads all staged NPPES rows into three in-memory lookup dicts (`by_address`, `by_zip`, `by_state`), then streams every FQHC site joined to `raw_hrsa_sites` via JSONB `BPHC Assigned Number` and attempts a three-tier match:
+
+- **Tier 1** — exact `(zip5, normalised_address)` key; score = 1.0, or name-sim when multiple NPIs share the same address
+- **Tier 2** — fuzzy address within same ZIP (`addr_sim ≥ 0.85`, `name_sim ≥ 0.70`); score = mean of both sims
+- **Tier 3** — name similarity within same city + state (`name_sim ≥ 0.80`); always written as `status = 'pending'`
+
+Writes results to `npi_match_candidates` (upsert on `site_id, candidate_npi`). Sites where HRSA already has a non-null NPI that differs from the NPPES match are written with `status = 'conflict'`. `--replace` wipes the table before running.
+
+Address normalisation strips suite tokens (`STE`, `SUITE`, `APT`, `UNIT`, `BLDG`, `FL`, `RM`, `ROOM`, `#`) and everything after them, including any trailing letter or number (e.g. `STE F`, `STE 250`, `# 2100`). A leading comma before the token is also absorbed. The same normaliser runs on both HRSA and NPPES sides so that `150 SARGENT DR STE 1` and `150 SARGENT DR` match at Tier 1. See `_normalize_address`, `_SUITE_RE`, and `_TRAILING_PUNCT_RE` in the script.
+
+Real-data match results (dev, 2026-05-12): 17,969 FQHC sites → T1 9,737 / T2 327 / T3 249 / conflict 694 / no-match 6,962.
+
+**Stage 3 — Promote** (`promote_npi_matches.py`):  
+Streams `npi_match_candidates` with `status IN ('accepted', 'conflict')` and writes `candidate_npi` to `sites.npi` for:
+
+- All `accepted` candidates (Tier 1/2 with score above threshold)
+- `conflict` candidates where `Levenshtein.distance(site_npi, candidate_npi) ≤ 2` (catches digit transpositions)
+
+Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. Conflict candidates with edit distance > 2 are left untouched for manual review. `--dry-run` logs what would be promoted without writing anything.
+
+Real-data promotion results (dev, 2026-05-12): 8,337 accepted + 16 conflict-within-edit-distance = 8,353 promoted; 678 conflicts skipped; 1,976 pending.
+
+**`npi_match_candidates` status lifecycle:**
+
+| Status | Meaning |
+|---|---|
+| `accepted` | Auto-accepted by match algorithm; ready to promote |
+| `pending` | Tier 3 or low-confidence Tier 2; requires human review |
+| `conflict` | HRSA NPI ≠ NPPES candidate; promote resolves by edit distance |
+| `promoted` | `candidate_npi` has been written to `sites.npi` |
+| `rejected` | Manually rejected; will never be promoted |
 
 ### API layer
 
