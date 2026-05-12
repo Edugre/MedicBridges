@@ -5,15 +5,15 @@ const Privacy = () => {
     <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '800px', animation: 'fadeIn 0.6s ease-out' }}>
       
       <div style={{ marginBottom: '3rem' }}>
-        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-bg-surface-hover)', color: 'var(--mb-text-secondary)', borderRadius: 'var(--mb-radius-pill)', fontWeight: 500, marginBottom: '1rem', border: '1px solid var(--mb-border)' }}>
+        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-bg-surface-hover)', color: 'var(--mb-text-secondary)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem', border: '1px solid var(--mb-border)' }}>
           Florida International University — Student Research Project
         </div>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Privacy Policy & Terms of Use</h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)' }}>MedicBridges | Last updated: March 2026</p>
-        <p style={{ marginTop: '0.5rem', fontWeight: 600, color: 'var(--mb-accent)' }}>Non-commercial. Non-profit. Educational purposes only.</p>
+        <p style={{ marginTop: '0.5rem', color: 'var(--mb-accent)' }}><em>Non-commercial. Non-profit. Educational purposes only.</em></p>
       </div>
 
-      <div className="mb-bento-card" style={{ padding: '3rem' }}>
+      <div className="mb-bento-card privacy-card" style={{ padding: '3rem' }}>
         
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Summary</h2>
         <p style={{ color: 'var(--mb-text-secondary)', lineHeight: 1.6, marginBottom: '2rem' }}>
@@ -74,6 +74,12 @@ const Privacy = () => {
         </div>
 
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .privacy-card { padding: 1.5rem !important; }
+        }
+      `}</style>
     </div>
   );
 };

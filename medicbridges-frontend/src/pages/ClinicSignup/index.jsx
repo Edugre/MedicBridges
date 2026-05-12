@@ -6,10 +6,10 @@ const ClinicSignup = () => {
     <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '800px', animation: 'fadeIn 0.6s ease-out' }}>
       
       <div style={{ marginBottom: '3rem' }}>
-        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--mb-primary)', borderRadius: 'var(--mb-radius-pill)', fontWeight: 600, marginBottom: '1rem' }}>
+        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem' }}>
           For Healthcare Providers
         </div>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Register Your Clinic on MedicBridges</h1>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Register Your Clinic</h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)' }}>
           Start reaching pre-screened Medicaid and uninsured patients in Miami. Get listed free — upgrade when you see results.
         </p>
@@ -40,7 +40,7 @@ const ClinicSignup = () => {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">ZIP Code *</label>
               <input type="text" className="mb-input" placeholder="e.g. 33101" required />
@@ -68,13 +68,12 @@ const ClinicSignup = () => {
 
           <div className="mb-input-group">
             <label className="mb-label">Brief Description</label>
-            <textarea className="mb-textarea" rows="4" placeholder="Tell patients a little about your clinic, the community you serve, and what makes you unique..."></textarea>
+            <textarea className="mb-textarea" rows="4" placeholder="Tell patients a little about your clinic..."></textarea>
           </div>
-
 
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Contact Person</h2>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">Full Name *</label>
               <input type="text" className="mb-input" required />
@@ -85,7 +84,7 @@ const ClinicSignup = () => {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div className="mb-input-group">
               <label className="mb-label">Email *</label>
               <input type="email" className="mb-input" required />
@@ -96,16 +95,15 @@ const ClinicSignup = () => {
             </div>
           </div>
 
-
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Services Offered</h2>
           <p style={{ color: 'var(--mb-text-secondary)', marginBottom: '1rem', fontSize: '0.95rem' }}>Select all services your clinic provides:</p>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <div className="checkbox-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.5rem' }}>
             <label className="mb-checkbox-label"><input type="checkbox" /> Primary Care</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Dental</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Mental Health / Therapy</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Pharmacy / Medications</label>
-            <label className="mb-checkbox-label"><input type="checkbox" /> Women’s Health</label>
+            <label className="mb-checkbox-label"><input type="checkbox" /> Women's Health</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Pediatrics</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Vision</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> HIV/AIDS</label>
@@ -133,7 +131,7 @@ const ClinicSignup = () => {
           </div>
 
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Languages Spoken</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '3rem' }}>
+          <div className="checkbox-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '3rem' }}>
             <label className="mb-checkbox-label"><input type="checkbox" defaultChecked /> English</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Spanish / Espanol</label>
             <label className="mb-checkbox-label"><input type="checkbox" /> Haitian Creole</label>
@@ -142,41 +140,48 @@ const ClinicSignup = () => {
           </div>
 
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>Choose Your Plan</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-            <label className="mb-bento-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer', border: '1px solid var(--mb-primary)' }}>
+          <div className="plan-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
+            <label className="mb-bento-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer', border: '1px solid var(--mb-accent)' }}>
               <input type="radio" name="plan" defaultChecked style={{ marginTop: '0.25rem' }} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.25rem' }}>Basic (Free)</div>
+                <div style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>Basic (Free)</div>
                 <div style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Listed in directory, Patients can find and call you.</div>
               </div>
             </label>
             <label className="mb-bento-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
               <input type="radio" name="plan" style={{ marginTop: '0.25rem' }} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.25rem' }}>Featured ($99 /mo)</div>
+                <div style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>Featured ($99 /mo)</div>
                 <div style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Top placement, AI matching, and basic analytics.</div>
               </div>
             </label>
             <label className="mb-bento-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer' }}>
               <input type="radio" name="plan" style={{ marginTop: '0.25rem' }} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.25rem' }}>Partner ($299 /mo)</div>
+                <div style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>Partner ($299 /mo)</div>
                 <div style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>For networks & hospitals with advanced needs.</div>
               </div>
             </label>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <button type="submit" className="mb-btn mb-btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
-              Submit — We’ll Reach Out in 24h <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} />
+            <button type="submit" className="mb-btn mb-btn-secondary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
+              Submit — We'll Reach Out in 24h <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} />
             </button>
             <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.85rem', maxWidth: '500px' }}>
-              Your information is private and never sold. MedicBridges is a non-commercial academic prototype. By registering you agree to our Privacy Policy.
+              Your information is private and never sold. MedicBridges is a non-commercial academic prototype.
             </p>
           </div>
 
         </form>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .form-row { grid-template-columns: 1fr !important; }
+          .checkbox-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 };

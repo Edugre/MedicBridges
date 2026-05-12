@@ -2,25 +2,29 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 
+const footerLinkStyle = { color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem', fontFamily: "'DM Serif Text', Georgia, serif" };
+const footerHeadingStyle = { color: '#f5f0e8', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 400, fontFamily: "'DM Serif Display', Georgia, serif" };
+
 const Footer = () => {
   return (
     <footer style={{ 
       marginTop: 'auto',
       padding: '4rem 2rem 2rem', 
-      backgroundColor: 'var(--mb-accent)',
-      color: 'rgba(255,255,255,0.7)',
+      backgroundColor: '#1a2e1a',
+      color: 'rgba(245,240,232,0.7)',
+      fontFamily: "'DM Serif Text', Georgia, serif",
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem', marginBottom: '3rem' }}>
+        <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem', marginBottom: '3rem' }}>
           
           {/* Brand */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <div style={{ background: 'var(--mb-primary)', color: 'white', padding: '0.3rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: 'var(--mb-lime)', color: '#2d3b2d', padding: '0.3rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Stethoscope size={18} />
               </div>
-              <span style={{ fontWeight: 700, fontSize: '1.15rem', color: 'white' }}>MedicBridges</span>
+              <span style={{ fontWeight: 400, fontSize: '1.15rem', color: '#f5f0e8', fontFamily: "'DM Serif Display', Georgia, serif" }}>MedicBridges</span>
             </div>
             <p style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>
               Connecting patients with free and low-cost healthcare in Miami-Dade.
@@ -29,39 +33,48 @@ const Footer = () => {
 
           {/* For Patients */}
           <div>
-            <h4 style={{ color: 'white', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 600 }}>For Patients</h4>
+            <h4 style={footerHeadingStyle}>For Patients</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link to="/search" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Find Care</Link>
-              <Link to="/map" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Clinic Map</Link>
-              <Link to="/patient-signup" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Create Profile</Link>
-              <Link to="/historias" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Historias</Link>
+              <Link to="/search" style={footerLinkStyle}>Find Care</Link>
+              <Link to="/map" style={footerLinkStyle}>Clinic Map</Link>
+              <Link to="/patient-signup" style={footerLinkStyle}>Create Profile</Link>
+              <Link to="/historias" style={footerLinkStyle}>Historias</Link>
             </div>
           </div>
 
           {/* For Clinics */}
           <div>
-            <h4 style={{ color: 'white', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 600 }}>For Clinics</h4>
+            <h4 style={footerHeadingStyle}>For Clinics</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link to="/for-clinics" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Why MedicBridges</Link>
-              <Link to="/clinic-signup" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Register Your Clinic</Link>
+              <Link to="/for-clinics" style={footerLinkStyle}>Why MedicBridges</Link>
+              <Link to="/clinic-signup" style={footerLinkStyle}>Register Your Clinic</Link>
             </div>
           </div>
 
           {/* Legal */}
           <div>
-            <h4 style={{ color: 'white', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 600 }}>Legal</h4>
+            <h4 style={footerHeadingStyle}>Legal</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Privacy Policy</Link>
-              <Link to="/problem" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>Our Mission</Link>
+              <Link to="/privacy" style={footerLinkStyle}>Privacy Policy</Link>
+              <Link to="/problem" style={footerLinkStyle}>Our Mission</Link>
             </div>
           </div>
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>
+        <div style={{ borderTop: '1px solid rgba(245,240,232,0.1)', paddingTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: 'rgba(245,240,232,0.4)' }}>
           © 2026 MedicBridges — Miami, FL. A non-commercial FIU student research project.
         </div>
 
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .footer-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 2rem !important;
+          }
+        }
+      `}</style>
     </footer>
   );
 };
