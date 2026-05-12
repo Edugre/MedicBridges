@@ -200,17 +200,17 @@ async def transform(source_file: str) -> tuple[int, int]:
                 "no completed ingest_run found for source_file=%s", source_file
             )
             return 0, 0
-        org_id_by_bhcmis = await _upsert_organizations(
-            read_session, write_session, source_file, ingested_at
-        )
-        n_sites = await _upsert_sites(
-            read_session,
-            write_session,
-            source_file,
-            ingested_at,
-            org_id_by_bhcmis,
-        )
-        await write_session.commit()
+        async with write_session.begin():
+            org_id_by_bhcmis = await _upsert_organizations(
+                read_session, write_session, source_file, ingested_at
+            )
+            n_sites = await _upsert_sites(
+                read_session,
+                write_session,
+                source_file,
+                ingested_at,
+                org_id_by_bhcmis,
+            )
     logger.info("done: %s organizations, %s sites", len(org_id_by_bhcmis), n_sites)
     return len(org_id_by_bhcmis), n_sites
 
