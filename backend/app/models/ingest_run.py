@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -9,6 +10,7 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -41,9 +43,12 @@ class IngestRun(UUIDPrimaryKeyMixin, Base):
     )
     status: Mapped[str] = mapped_column(Text, nullable=False)
     row_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rows_read: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rows_passed_filter: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     file_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stats: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
