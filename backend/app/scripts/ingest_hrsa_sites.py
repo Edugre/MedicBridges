@@ -113,8 +113,9 @@ async def _load_staging(
     """Insert staging rows and mark the IngestRun completed in one transaction.
 
     All staging rows are written with ``ingested_at`` set explicitly to the
-    same timestamp as the IngestRun's ``started_at``, so the transform can
-    resolve a snapshot via the catalog and filter staging on equality.
+    same timestamp as the IngestRun's ``started_at``, and ``ingest_run_id``
+    set to this run's id, so the transform can resolve the snapshot via the
+    catalog and filter staging on a stable batch key.
     """
     total = 0
     batch: list[dict] = []
@@ -134,6 +135,7 @@ async def _load_staging(
             batch.append(
                 {
                     "source_file": source_file,
+                    "ingest_run_id": run_id,
                     "raw_data": row,
                     "ingested_at": ingested_at,
                 }

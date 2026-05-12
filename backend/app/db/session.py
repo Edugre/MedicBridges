@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from typing import Any
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 from sqlalchemy.ext.asyncio import (
@@ -48,17 +49,13 @@ def get_engine() -> AsyncEngine:
     return _engine
 
 
-def _get_session_factory() -> async_sessionmaker[AsyncSession]:
-    get_engine()
-    assert _session_factory is not None
-    return _session_factory
-
-
 class _SessionLocalProxy:
     """Callable like async_sessionmaker so imports of SessionLocal() keep working."""
 
-    def __call__(self, *args, **kwargs):
-        return _get_session_factory()(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> AsyncSession:
+        get_engine()
+        assert _session_factory is not None  # set together with _engine in get_engine()
+        return _session_factory(*args, **kwargs)
 
 
 SessionLocal = _SessionLocalProxy()

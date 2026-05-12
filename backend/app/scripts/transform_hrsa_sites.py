@@ -5,7 +5,6 @@ import asyncio
 import logging
 import uuid
 from collections.abc import AsyncIterator
-from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -20,18 +19,17 @@ DEFAULT_SOURCE_FILE = "Health_Center_Service_Delivery_and_LookAlike_Sites.csv"
 SITE_BATCH_SIZE = 1000
 
 
-async def _resolve_latest_ingested_at(
+async def _resolve_latest_ingest_run_id(
     session: AsyncSession, source_file: str
-) -> datetime | None:
-    """Resolve the snapshot timestamp of the most recent successful ingest.
+) -> uuid.UUID | None:
+    """Return the ingest run id for the most recent successful ingest.
 
-    Looked up via the ingest_runs catalog (small, indexed) rather than
-    scanning raw_hrsa_sites for MAX(ingested_at). Both the org pass and the
-    site pass below filter on this exact timestamp, so they see the same
-    snapshot even if a concurrent ingest commits mid-run under READ COMMITTED.
+    Staging rows are keyed by ``ingest_run_id`` so the snapshot is unambiguous
+    even if two runs share the same ``started_at`` clock value. Both passes
+    below filter on this id so they see the same batch under READ COMMITTED.
     """
     stmt = (
-        select(IngestRun.started_at)
+        select(IngestRun.id)
         .where(IngestRun.source_file == source_file)
         .where(IngestRun.status == "completed")
         .order_by(IngestRun.completed_at.desc())
@@ -42,7 +40,7 @@ async def _resolve_latest_ingested_at(
 
 
 async def _stream_raw_rows(
-    session: AsyncSession, source_file: str, ingested_at: datetime
+    session: AsyncSession, source_file: str, ingest_run_id: uuid.UUID
 ) -> AsyncIterator[dict]:
     """Yield raw_data JSONB blobs for the snapshot one row at a time.
 
@@ -54,7 +52,7 @@ async def _stream_raw_rows(
     stmt = (
         select(RawHrsaSite.raw_data)
         .where(RawHrsaSite.source_file == source_file)
-        .where(RawHrsaSite.ingested_at == ingested_at)
+        .where(RawHrsaSite.ingest_run_id == ingest_run_id)
     )
     result = await session.stream(stmt)
     try:
@@ -68,7 +66,7 @@ async def _upsert_organizations(
     read_session: AsyncSession,
     write_session: AsyncSession,
     source_file: str,
-    ingested_at: datetime,
+    ingest_run_id: uuid.UUID,
 ) -> dict[str, uuid.UUID]:
     """Stream the snapshot, dedupe by BHCMIS Org ID, upsert, return {bhcmis_org_id: id}.
 
@@ -82,7 +80,7 @@ async def _upsert_organizations(
     (e.g. NPPES) by a separate transform.
     """
     seen: dict[str, dict] = {}
-    async for row in _stream_raw_rows(read_session, source_file, ingested_at):
+    async for row in _stream_raw_rows(read_session, source_file, ingest_run_id):
         bhcmis_org_id = (row.get("BHCMIS Organization Identification Number") or "").strip()
         legal_name = (row.get("Health Center Name") or "").strip()
         if not bhcmis_org_id or not legal_name:
@@ -164,7 +162,7 @@ async def _upsert_sites(
     read_session: AsyncSession,
     write_session: AsyncSession,
     source_file: str,
-    ingested_at: datetime,
+    ingest_run_id: uuid.UUID,
     org_id_by_bhcmis: dict[str, uuid.UUID],
 ) -> int:
     """Stream the snapshot again; flush sites in SITE_BATCH_SIZE chunks.
@@ -175,7 +173,7 @@ async def _upsert_sites(
     """
     chunk: list[dict] = []
     total = 0
-    async for row in _stream_raw_rows(read_session, source_file, ingested_at):
+    async for row in _stream_raw_rows(read_session, source_file, ingest_run_id):
         values = _site_values(row, org_id_by_bhcmis)
         if values is None:
             continue
@@ -194,21 +192,21 @@ async def _upsert_sites(
 
 async def transform(source_file: str) -> tuple[int, int]:
     async with SessionLocal() as read_session, SessionLocal() as write_session:
-        ingested_at = await _resolve_latest_ingested_at(read_session, source_file)
-        if ingested_at is None:
+        ingest_run_id = await _resolve_latest_ingest_run_id(read_session, source_file)
+        if ingest_run_id is None:
             logger.warning(
                 "no completed ingest_run found for source_file=%s", source_file
             )
             return 0, 0
         async with write_session.begin():
             org_id_by_bhcmis = await _upsert_organizations(
-                read_session, write_session, source_file, ingested_at
+                read_session, write_session, source_file, ingest_run_id
             )
             n_sites = await _upsert_sites(
                 read_session,
                 write_session,
                 source_file,
-                ingested_at,
+                ingest_run_id,
                 org_id_by_bhcmis,
             )
     logger.info("done: %s organizations, %s sites", len(org_id_by_bhcmis), n_sites)
