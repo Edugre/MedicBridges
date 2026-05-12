@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import SessionLocal, engine
-from app.models import Organization, RawHrsaSite, Site
+from app.models import IngestRun, Organization, RawHrsaSite, Site
 
 logger = logging.getLogger("transform_hrsa_sites")
 
@@ -23,14 +23,19 @@ SITE_BATCH_SIZE = 1000
 async def _resolve_latest_ingested_at(
     session: AsyncSession, source_file: str
 ) -> datetime | None:
-    """Resolve the most recent ingested_at for source_file once, up-front.
+    """Resolve the snapshot timestamp of the most recent successful ingest.
 
-    Both the org pass and the site pass below filter on this exact timestamp,
-    so they see the same snapshot even if a concurrent ingest commits mid-run
-    under READ COMMITTED isolation.
+    Looked up via the ingest_runs catalog (small, indexed) rather than
+    scanning raw_hrsa_sites for MAX(ingested_at). Both the org pass and the
+    site pass below filter on this exact timestamp, so they see the same
+    snapshot even if a concurrent ingest commits mid-run under READ COMMITTED.
     """
-    stmt = select(func.max(RawHrsaSite.ingested_at)).where(
-        RawHrsaSite.source_file == source_file
+    stmt = (
+        select(IngestRun.started_at)
+        .where(IngestRun.source_file == source_file)
+        .where(IngestRun.status == "completed")
+        .order_by(IngestRun.completed_at.desc())
+        .limit(1)
     )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
@@ -191,7 +196,9 @@ async def transform(source_file: str) -> tuple[int, int]:
     async with SessionLocal() as read_session, SessionLocal() as write_session:
         ingested_at = await _resolve_latest_ingested_at(read_session, source_file)
         if ingested_at is None:
-            logger.warning("no rows found for source_file=%s", source_file)
+            logger.warning(
+                "no completed ingest_run found for source_file=%s", source_file
+            )
             return 0, 0
         org_id_by_bhcmis = await _upsert_organizations(
             read_session, write_session, source_file, ingested_at
