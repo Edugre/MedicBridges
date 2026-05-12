@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
+from app.core.config import get_settings, healthz_includes_app_env
 from app.db.session import dispose_engine, get_db
 
 
@@ -19,7 +19,11 @@ app = FastAPI(title="MedicBridges API", lifespan=lifespan)
 
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok", "env": get_settings().app_env}
+    settings = get_settings()
+    payload: dict[str, str] = {"status": "ok"}
+    if healthz_includes_app_env(settings):
+        payload["env"] = settings.app_env
+    return payload
 
 
 @app.get("/healthz/db")
