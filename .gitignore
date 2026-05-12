@@ -3,6 +3,7 @@
 .env.local
 .env.dev
 .env.staging
+.env.test
 .env.*.local
 
 # Node / Frontend

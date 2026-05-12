@@ -9,8 +9,10 @@ All commands run from `backend/`. The project uses `uv` (`[dependency-groups]` i
 ```bash
 uv sync                          # install all deps including dev group
 uv run uvicorn app.main:app --reload  # dev server (http://localhost:8000)
-uv run pytest                    # run tests
-uv run pytest path/to/test.py::test_name  # single test
+uv run pytest app/tests/unit     # unit tests (no DB required)
+uv run pytest app/tests/integration  # integration tests (requires .env.test)
+uv run pytest                    # all tests
+uv run pytest app/tests/integration/test_transform.py::test_upsert_updates_site_name  # single test
 uv run ruff check .              # lint
 uv run ruff format .             # format
 uv run mypy .                    # type-check
@@ -41,6 +43,20 @@ Two database URLs are required:
 - `DATABASE_URL_DIRECT` — `postgresql+psycopg://...` — used by Alembic only (requires a direct connection)
 
 `INCLUDE_ENV_IN_HEALTHZ` is optional; if unset, `GET /healthz` omits `app_env` in production and includes it otherwise.
+
+## Tests
+
+Tests live in `app/tests/` and split into two layers:
+
+**Unit** (`app/tests/unit/`) — pure functions, no database:
+- `test_config.py` — `healthz_includes_app_env` logic
+- `test_session.py` — `_prepare_asyncpg_url` (SSL stripping, pooler detection)
+- `test_transform_helpers.py` — `_location_expr` and `_site_values`
+
+**Integration** (`app/tests/integration/`) — require a live PostgreSQL database. Create `.env.test` at the repo root (same format as `.env.example`) pointing at a test database with `postgis` and `pg_trgm` enabled. Alembic migrations run automatically once per test session; all tables are truncated between tests.
+- `test_ingest.py` — staging rows, `IngestRun` catalog, `--replace` semantics
+- `test_transform.py` — org/site upserts, geocoding, `updated_at` refresh, snapshot isolation
+- `test_api.py` — `/healthz` and `/healthz/db` endpoints
 
 ## Architecture
 
