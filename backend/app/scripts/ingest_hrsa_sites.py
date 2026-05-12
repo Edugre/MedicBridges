@@ -14,7 +14,7 @@ from typing import Iterator
 
 from sqlalchemy import delete, func, insert, select, update
 
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal, dispose_engine
 from app.models import IngestRun, RawHrsaSite
 
 logger = logging.getLogger("ingest_hrsa_sites")
@@ -226,7 +226,7 @@ async def _run(
     try:
         await ingest(csv_path, batch_size, replace=replace)
     finally:
-        await engine.dispose()
+        await dispose_engine()
 
 
 def main() -> None:

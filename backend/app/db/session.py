@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 from collections.abc import AsyncIterator
-from urllib.parse import urlsplit, urlunsplit, parse_qsl
+from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 
 from app.core.config import get_settings
+
+_engine: AsyncEngine | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 def _prepare_asyncpg_url(url: str) -> tuple[str, dict]:
@@ -26,17 +32,45 @@ def _prepare_asyncpg_url(url: str) -> tuple[str, dict]:
     return urlunsplit(parts._replace(query=new_query)), connect_args
 
 
-settings = get_settings()
-_url, _connect_args = _prepare_asyncpg_url(settings.database_url)
+def get_engine() -> AsyncEngine:
+    """Return the shared async engine, creating it on first use."""
+    global _engine, _session_factory
+    if _engine is None:
+        settings = get_settings()
+        url, connect_args = _prepare_asyncpg_url(settings.database_url)
+        _engine = create_async_engine(
+            url,
+            connect_args=connect_args,
+            pool_pre_ping=True,
+            echo=False,
+        )
+        _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+    return _engine
 
-engine = create_async_engine(
-    _url,
-    connect_args=_connect_args,
-    pool_pre_ping=True,
-    echo=False,
-)
 
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+def _get_session_factory() -> async_sessionmaker[AsyncSession]:
+    get_engine()
+    assert _session_factory is not None
+    return _session_factory
+
+
+class _SessionLocalProxy:
+    """Callable like async_sessionmaker so imports of SessionLocal() keep working."""
+
+    def __call__(self, *args, **kwargs):
+        return _get_session_factory()(*args, **kwargs)
+
+
+SessionLocal = _SessionLocalProxy()
+
+
+async def dispose_engine() -> None:
+    """Dispose the pooled connections and drop cached engine/session factory."""
+    global _engine, _session_factory
+    if _engine is not None:
+        await _engine.dispose()
+    _engine = None
+    _session_factory = None
 
 
 async def get_db() -> AsyncIterator[AsyncSession]:

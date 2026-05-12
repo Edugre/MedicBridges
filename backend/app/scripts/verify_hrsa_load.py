@@ -8,7 +8,7 @@ import sys
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal, dispose_engine
 from app.models import Organization, Site
 
 logger = logging.getLogger("verify_hrsa_load")
@@ -104,7 +104,7 @@ async def _run(args: argparse.Namespace) -> None:
             min_distinct_states=args.min_distinct_states,
         )
     finally:
-        await engine.dispose()
+        await dispose_engine()
 
 
 def main() -> None:

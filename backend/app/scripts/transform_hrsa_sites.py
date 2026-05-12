@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal, dispose_engine
 from app.models import IngestRun, Organization, RawHrsaSite, Site
 
 logger = logging.getLogger("transform_hrsa_sites")
@@ -219,7 +219,7 @@ async def _run(source_file: str) -> None:
     try:
         await transform(source_file)
     finally:
-        await engine.dispose()
+        await dispose_engine()
 
 
 def main() -> None:

@@ -5,13 +5,13 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.db.session import engine, get_db
+from app.db.session import dispose_engine, get_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-    await engine.dispose()
+    await dispose_engine()
 
 
 app = FastAPI(title="MedicBridges API", lifespan=lifespan)
