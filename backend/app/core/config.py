@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -17,9 +18,7 @@ class Settings(BaseSettings):
     database_url_direct: str
 
     model_config = SettingsConfigDict(
-        env_file=_env_file_for(
-            __import__("os").environ.get("APP_ENV", "local")
-        ),
+        env_file=_env_file_for(os.environ.get("APP_ENV", "local")),
         env_file_encoding="utf-8",
         extra="ignore",
     )
