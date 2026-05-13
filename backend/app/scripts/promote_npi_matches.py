@@ -39,15 +39,15 @@ async def _flush_promote_chunk(
     site_npi_map = {row["site_id"]: row["candidate_npi"] for row in chunk}
     candidate_ids = [row["candidate_id"] for row in chunk]
 
-    # CASE WHEN id = :uuid THEN :npi ... ELSE npi END — two queries per batch
-    npi_expr = case(
+    # CASE WHEN id = :uuid THEN :npi ... ELSE org_npi END — two queries per batch
+    org_npi_expr = case(
         *[(Site.id == site_id, npi) for site_id, npi in site_npi_map.items()],
-        else_=Site.npi,
+        else_=Site.org_npi,
     )
     await session.execute(
         update(Site)
         .where(Site.id.in_(list(site_npi_map.keys())))
-        .values(npi=npi_expr, updated_at=func.now())
+        .values(org_npi=org_npi_expr, updated_at=func.now())
     )
     await session.execute(
         update(NpiMatchCandidate)

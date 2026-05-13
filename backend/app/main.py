@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings, healthz_includes_app_env
 from app.db.session import dispose_engine, get_db
+from app.routers.review import router as review_router
 
 
 @asynccontextmanager
@@ -15,6 +18,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="MedicBridges API", lifespan=lifespan)
+
+app.include_router(review_router)
+
+_REVIEW_DIST = Path(__file__).resolve().parents[2] / "frontend" / "review" / "dist"
+if _REVIEW_DIST.exists():
+    app.mount("/review-ui", StaticFiles(directory=_REVIEW_DIST, html=True), name="review-ui")
 
 
 @app.get("/healthz")

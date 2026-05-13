@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Index,
     Numeric,
@@ -50,6 +52,8 @@ class NpiMatchCandidate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     nppes_state: Mapped[str] = mapped_column(Text, nullable=False)
     nppes_zip5: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_by: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint("site_id", "candidate_npi"),
