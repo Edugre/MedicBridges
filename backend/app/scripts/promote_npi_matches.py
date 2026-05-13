@@ -4,10 +4,8 @@ import argparse
 import asyncio
 import logging
 import sys
-import uuid
 from datetime import datetime, timezone
 
-from rapidfuzz.distance import Levenshtein
 from sqlalchemy import case, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +17,6 @@ logger = logging.getLogger("promote_npi_matches")
 PROMOTE_SOURCE_FILE = "promote_npi_matches"
 BATCH_SIZE = 500
 ERROR_TRUNCATE = 2000
-CONFLICT_EDIT_DIST_MAX = 2
 
 
 # ---------------------------------------------------------------------------
@@ -34,8 +31,8 @@ async def _flush_promote_chunk(
     if dry_run:
         for row in chunk:
             logger.info(
-                "DRY-RUN promote site_id=%s candidate_npi=%s (status=%s)",
-                row["site_id"], row["candidate_npi"], row["status"],
+                "DRY-RUN promote site_id=%s candidate_npi=%s",
+                row["site_id"], row["candidate_npi"],
             )
         return
 
@@ -66,8 +63,7 @@ async def _flush_promote_chunk(
 async def _run_promote(dry_run: bool) -> dict:
     counts = {
         "promoted_accepted": 0,
-        "promoted_conflict": 0,
-        "skipped_conflict": 0,
+        "held_for_review": 0,
     }
     chunk: list[dict] = []
 
@@ -76,52 +72,43 @@ async def _run_promote(dry_run: bool) -> dict:
             NpiMatchCandidate.id,
             NpiMatchCandidate.site_id,
             NpiMatchCandidate.candidate_npi,
-            NpiMatchCandidate.status,
-            Site.npi.label("site_npi"),
         )
-        .join(Site, NpiMatchCandidate.site_id == Site.id)
-        .where(NpiMatchCandidate.status.in_(["accepted", "conflict"]))
+        .where(NpiMatchCandidate.status == "accepted")
     )
 
     async with SessionLocal() as read_session, SessionLocal() as write_session:
         result = await read_session.stream(stream_stmt)
         try:
             async with write_session.begin():
-                async for cand_id, site_id, candidate_npi, status, site_npi in result:
-                    if status == "accepted":
-                        chunk.append({
-                            "candidate_id": cand_id,
-                            "site_id": site_id,
-                            "candidate_npi": candidate_npi,
-                            "status": status,
-                        })
-                        counts["promoted_accepted"] += 1
-                    else:  # conflict
-                        dist = Levenshtein.distance(site_npi or "", candidate_npi)
-                        if dist <= CONFLICT_EDIT_DIST_MAX:
-                            chunk.append({
-                                "candidate_id": cand_id,
-                                "site_id": site_id,
-                                "candidate_npi": candidate_npi,
-                                "status": status,
-                            })
-                            counts["promoted_conflict"] += 1
-                        else:
-                            counts["skipped_conflict"] += 1
+                async for cand_id, site_id, candidate_npi in result:
+                    chunk.append({
+                        "candidate_id": cand_id,
+                        "site_id": site_id,
+                        "candidate_npi": candidate_npi,
+                    })
+                    counts["promoted_accepted"] += 1
 
                     if len(chunk) >= BATCH_SIZE:
                         await _flush_promote_chunk(write_session, chunk, dry_run)
                         chunk.clear()
-                        logger.info(
-                            "promoted=%s (accepted=%s conflict=%s) skipped_conflict=%s",
-                            counts["promoted_accepted"] + counts["promoted_conflict"],
-                            counts["promoted_accepted"],
-                            counts["promoted_conflict"],
-                            counts["skipped_conflict"],
-                        )
+                        logger.info("promoted=%s", counts["promoted_accepted"])
 
                 if chunk:
                     await _flush_promote_chunk(write_session, chunk, dry_run)
+
+                if not dry_run:
+                    res = await write_session.execute(
+                        update(NpiMatchCandidate)
+                        .where(NpiMatchCandidate.status == "conflict")
+                        .values(status="requires_review", updated_at=func.now())
+                    )
+                    counts["held_for_review"] = res.rowcount
+                else:
+                    counts["held_for_review"] = (await write_session.scalar(
+                        select(func.count())
+                        .select_from(NpiMatchCandidate)
+                        .where(NpiMatchCandidate.status == "conflict")
+                    )) or 0
         finally:
             await result.close()
 
@@ -168,10 +155,9 @@ async def promote(dry_run: bool = False) -> dict:
             await session.commit()
         raise
 
-    total_promoted = counts["promoted_accepted"] + counts["promoted_conflict"]
     total_evaluated = (
-        total_promoted
-        + counts["skipped_conflict"]
+        counts["promoted_accepted"]
+        + counts["held_for_review"]
         + skipped_pending
         + already_promoted
     )
@@ -183,13 +169,12 @@ async def promote(dry_run: bool = False) -> dict:
             .values(
                 status="completed",
                 completed_at=func.now(),
-                row_count=total_promoted,
+                row_count=counts["promoted_accepted"],
                 rows_read=total_evaluated,
-                rows_passed_filter=total_promoted,
+                rows_passed_filter=counts["promoted_accepted"],
                 stats={
                     "promoted_accepted": counts["promoted_accepted"],
-                    "promoted_conflict": counts["promoted_conflict"],
-                    "skipped_conflict":  counts["skipped_conflict"],
+                    "held_for_review":   counts["held_for_review"],
                     "skipped_pending":   skipped_pending,
                     "already_promoted":  already_promoted,
                     "total_evaluated":   total_evaluated,
@@ -200,12 +185,9 @@ async def promote(dry_run: bool = False) -> dict:
         await session.commit()
 
     logger.info(
-        "done: promoted=%s (accepted=%s conflict=%s) skipped_conflict=%s "
-        "skipped_pending=%s already_promoted=%s (run_id=%s%s)",
-        total_promoted,
+        "done: promoted=%s held_for_review=%s skipped_pending=%s already_promoted=%s (run_id=%s%s)",
         counts["promoted_accepted"],
-        counts["promoted_conflict"],
-        counts["skipped_conflict"],
+        counts["held_for_review"],
         skipped_pending,
         already_promoted,
         run_id,

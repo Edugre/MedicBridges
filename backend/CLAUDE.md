@@ -133,14 +133,9 @@ Address normalisation strips suite tokens (`STE`, `SUITE`, `APT`, `UNIT`, `BLDG`
 Real-data match results (dev, 2026-05-12): 17,969 FQHC sites → T1 9,737 / T2 327 / T3 249 / conflict 694 / no-match 6,962.
 
 **Stage 3 — Promote** (`promote_npi_matches.py`):  
-Streams `npi_match_candidates` with `status IN ('accepted', 'conflict')` and writes `candidate_npi` to `sites.npi` for:
+Streams `npi_match_candidates` with `status = 'accepted'` and writes `candidate_npi` to `sites.npi`. Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. After the promotion loop, all remaining `conflict` candidates are transitioned to `requires_review` in a single bulk update — they are never auto-promoted. `--dry-run` logs what would be promoted and counts conflicts without writing anything.
 
-- All `accepted` candidates (Tier 1/2 with score above threshold)
-- `conflict` candidates where `Levenshtein.distance(site_npi, candidate_npi) ≤ 2` (catches digit transpositions)
-
-Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. Conflict candidates with edit distance > 2 are left untouched for manual review. `--dry-run` logs what would be promoted without writing anything.
-
-Real-data promotion results (dev, 2026-05-12): 8,337 accepted + 16 conflict-within-edit-distance = 8,353 promoted; 678 conflicts skipped; 1,976 pending.
+Real-data promotion results (dev, 2026-05-12): 8,337 accepted promoted; 694 conflicts held for review.
 
 **`npi_match_candidates` status lifecycle:**
 
@@ -148,7 +143,8 @@ Real-data promotion results (dev, 2026-05-12): 8,337 accepted + 16 conflict-with
 |---|---|
 | `accepted` | Auto-accepted by match algorithm; ready to promote |
 | `pending` | Tier 3 or low-confidence Tier 2; requires human review |
-| `conflict` | HRSA NPI ≠ NPPES candidate; promote resolves by edit distance |
+| `conflict` | HRSA NPI ≠ NPPES candidate; promote transitions to `requires_review` |
+| `requires_review` | Conflict held for human review via UI; never auto-promoted |
 | `promoted` | `candidate_npi` has been written to `sites.npi` |
 | `rejected` | Manually rejected; will never be promoted |
 

@@ -56,7 +56,7 @@ class NpiMatchCandidate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         CheckConstraint("match_tier IN (1, 2, 3)", name="tier_valid"),
         CheckConstraint("match_score >= 0 AND match_score <= 1", name="score_range"),
         CheckConstraint(
-            "status IN ('accepted', 'pending', 'rejected', 'promoted', 'conflict')",
+            "status IN ('accepted', 'pending', 'rejected', 'promoted', 'conflict', 'requires_review')",
             name="status_valid",
         ),
         Index("ix_npi_match_candidates_status", "status"),
