@@ -76,6 +76,13 @@ def _extract_fields(row: dict[str, str]) -> dict[str, str]:
 def _iter_csv_rows(csv_path: Path) -> Iterator[dict[str, str]]:
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
+        actual = set(reader.fieldnames or [])
+        missing = _KEEP_COLS - actual
+        if missing:
+            raise ValueError(
+                f"CSV is missing {len(missing)} required column(s): "
+                + ", ".join(sorted(missing))
+            )
         for row in reader:
             yield row
 
