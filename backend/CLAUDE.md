@@ -32,6 +32,7 @@ uv run python -m app.scripts.verify_hrsa_load [--min-orgs N] [--min-sites N]
 uv run python -m app.scripts.ingest_nppes [--csv PATH] [--replace]
 uv run python -m app.scripts.match_nppes_sites [--replace]
 uv run python -m app.scripts.promote_npi_matches [--dry-run]
+uv run python -m app.scripts.bulk_accept_pending [--execute]   # dry-run by default
 ```
 
 **Alembic** (must use `DATABASE_URL_DIRECT`, not the pooler URL):
@@ -107,14 +108,14 @@ Uses a **two-session design**: `read_session` holds a server-side cursor (via `s
 
 `organizations.npi` is intentionally left `NULL` by this transform. The HRSA site-delivery CSV only has per-site NPI (`FQHC Site NPI Number` → `sites.npi`); org-level NPI is expected to come from a separate NPPES transform.
 
-`sites.npi` is **not unique**. The HRSA dataset has duplicate NPI values — the same NPI can appear at multiple physical locations for a single credentialed provider. A unique constraint was applied and then reverted (see migration `b5f2c3d4e6a1`); do not re-add it. After NPPES promotion, NPI coverage reaches ~59% of sites; the remaining ~41% have no match in the FQHC taxonomy slice of NPPES and will need a different enrichment strategy.
+`sites.npi` is **not unique**. The HRSA dataset has duplicate NPI values — the same NPI can appear at multiple physical locations for a single credentialed provider. A unique constraint was applied and then reverted (see migration `b5f2c3d4e6a1`); do not re-add it. After NPPES promotion, `sites.org_npi` is populated for ~44% of sites (8,353); the remaining ~41% have no match in the FQHC taxonomy slice of NPPES and will need a different enrichment strategy.
 
 **Stage 3 — Verify** (`verify_hrsa_load.py`):  
-Data-quality checks: org count ≥ 1000, site count ≥ 15000, geocoded ratio ≥ 95%, distinct states ≥ 50, zero orphan sites. Exits non-zero on failure. Also reports `sites_with_npi` (total NPI coverage) and `npi_via_nppes` (sites whose NPI came from NPPES promotion) as informational metrics.
+Data-quality checks: org count ≥ 1000, site count ≥ 15000, geocoded ratio ≥ 95%, distinct states ≥ 50, zero orphan sites. Exits non-zero on failure. Also reports `sites_with_npi` (HRSA-sourced NPI coverage, i.e. `sites.npi IS NOT NULL`) and `npi_via_nppes` (distinct sites with a `promoted` candidate in `npi_match_candidates`) as informational metrics. Note: `sites_with_npi` counts only `sites.npi`; NPPES-promoted NPIs land in `sites.org_npi` and are not included in that count.
 
 ### NPPES NPI enrichment pipeline
 
-Three-stage pipeline that matches HRSA FQHC sites against the CMS NPPES provider registry and writes confirmed NPIs back to `sites.npi`.
+Four-stage pipeline that matches HRSA FQHC sites against the CMS NPPES provider registry and writes confirmed NPIs to `sites.org_npi`. `sites.npi` holds HRSA-sourced NPIs and is not modified by this pipeline.
 
 **Stage 1 — Ingest** (`ingest_nppes.py`):  
 Filters the 9.5M-row NPPES CSV to the ~18K FQHC organisations (Entity Type 2, taxonomy `261QF0400X`, no deactivation date) and stages 42 selected columns as JSONB into `raw_nppes_providers`. Pass rate is ~0.19% (18,104 of 9,551,447 rows). Records `rows_read`, `rows_passed_filter`, and `row_count` in `ingest_runs`. `--replace` wipes prior staging rows.
@@ -133,9 +134,12 @@ Address normalisation strips suite tokens (`STE`, `SUITE`, `APT`, `UNIT`, `BLDG`
 Real-data match results (dev, 2026-05-12): 17,969 FQHC sites → T1 9,737 / T2 327 / T3 249 / conflict 694 / no-match 6,962.
 
 **Stage 3 — Promote** (`promote_npi_matches.py`):  
-Streams `npi_match_candidates` with `status = 'accepted'` and writes `candidate_npi` to `sites.npi`. Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. After the promotion loop, all remaining `conflict` candidates are transitioned to `requires_review` in a single bulk update — they are never auto-promoted. `--dry-run` logs what would be promoted and counts conflicts without writing anything.
+Streams `npi_match_candidates` with `status = 'accepted'` and writes `candidate_npi` to `sites.org_npi` (the org-level NPI column; `sites.npi` holds HRSA-sourced NPIs and is not modified by the NPPES pipeline). Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. After the promotion loop, all remaining `conflict` candidates are transitioned to `requires_review` in a single bulk update — they are never auto-promoted. `--dry-run` logs what would be promoted and counts conflicts without writing anything.
 
 Real-data promotion results (dev, 2026-05-12): 8,337 accepted promoted; 694 conflicts held for review.
+
+**Stage 4 — Bulk-accept pending** (`bulk_accept_pending.py`):  
+Post-pipeline step for promoting high-confidence `pending` candidates without full human review. Tier 2 candidates with score ≥ 0.84 and Tier 3 candidates with score ≥ 0.95 qualify. Writes `candidate_npi` to `sites.org_npi` (same target as Stage 3), but only for sites where `org_npi IS NULL` — will not overwrite a value already set by Stage 3 or manual review. Creates an `IngestRun` record for observability. Default is dry-run; pass `--execute` to apply. Also available via `make bulk-accept-pending` / `make bulk-accept-pending-execute`.
 
 **`npi_match_candidates` status lifecycle:**
 
@@ -145,12 +149,12 @@ Real-data promotion results (dev, 2026-05-12): 8,337 accepted promoted; 694 conf
 | `pending` | Tier 3 or low-confidence Tier 2; requires human review |
 | `conflict` | HRSA NPI ≠ NPPES candidate; promote transitions to `requires_review` |
 | `requires_review` | Conflict held for human review via UI; never auto-promoted |
-| `promoted` | `candidate_npi` has been written to `sites.npi` |
+| `promoted` | `candidate_npi` has been written to `sites.org_npi` |
 | `rejected` | Manually rejected; will never be promoted |
 
 ### API layer
 
-New routes belong in `app/api/v1/`. Register routers on the `app` instance in `app/main.py`.
+Routers live in `app/routers/` and are registered on the `app` instance in `app/main.py`. The current review router mounts at `/review/*` (not `/api/v1/review/*`); the `app/api/v1/` directory exists but is currently empty. The `/review-ui/` static mount in `main.py` serves the built frontend from `frontend/review/dist/` when present.
 
 ### Migrations
 

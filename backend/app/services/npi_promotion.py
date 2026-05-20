@@ -19,7 +19,7 @@ async def promote_single_candidate(
     reviewed_at: datetime | None = None,
     reviewed_by: str | None = None,
 ) -> None:
-    """Write candidate_npi to sites.npi and mark the candidate as promoted.
+    """Write candidate_npi to sites.org_npi and mark the candidate as promoted.
 
     Pass reviewed_at and reviewed_by to record manual UI provenance.
     Caller is responsible for committing the transaction.
