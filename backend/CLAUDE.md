@@ -32,7 +32,8 @@ uv run python -m app.scripts.verify_hrsa_load [--min-orgs N] [--min-sites N]
 uv run python -m app.scripts.ingest_nppes [--csv PATH] [--replace]
 uv run python -m app.scripts.match_nppes_sites [--replace]
 uv run python -m app.scripts.promote_npi_matches [--dry-run]
-uv run python -m app.scripts.bulk_accept_pending [--execute]   # dry-run by default
+uv run python -m app.scripts.bulk_accept_pending [--execute]          # dry-run by default
+uv run python -m app.scripts.bulk_accept_conflicts [--execute]        # dry-run by default
 ```
 
 **Alembic** (must use `DATABASE_URL_DIRECT`, not the pooler URL):
@@ -120,6 +121,8 @@ Four-stage pipeline that matches HRSA FQHC sites against the CMS NPPES provider 
 **Stage 1 — Ingest** (`ingest_nppes.py`):  
 Filters the 9.5M-row NPPES CSV to the ~18K FQHC organisations (Entity Type 2, taxonomy `261QF0400X`, no deactivation date) and stages 42 selected columns as JSONB into `raw_nppes_providers`. Pass rate is ~0.19% (18,104 of 9,551,447 rows). Records `rows_read`, `rows_passed_filter`, and `row_count` in `ingest_runs`. `--replace` wipes prior staging rows.
 
+Before processing any data rows, `_iter_csv_rows` validates that all columns in `_KEEP_COLS` are present in the CSV header (`reader.fieldnames`). Missing columns raise a `ValueError` naming the absent columns; this propagates through `_load_staging` → `ingest()` → `_record_failure`, which marks the `IngestRun` as `failed` before re-raising. A CSV with correct headers but zero rows passing the filter is a successful run (`row_count = 0`).
+
 **Stage 2 — Match** (`match_nppes_sites.py`):  
 Loads all staged NPPES rows into three in-memory lookup dicts (`by_address`, `by_zip`, `by_state`), then streams every FQHC site joined to `raw_hrsa_sites` via JSONB `BPHC Assigned Number` and attempts a three-tier match:
 
@@ -136,10 +139,13 @@ Real-data match results (dev, 2026-05-12): 17,969 FQHC sites → T1 9,737 / T2 3
 **Stage 3 — Promote** (`promote_npi_matches.py`):  
 Streams `npi_match_candidates` with `status = 'accepted'` and writes `candidate_npi` to `sites.org_npi` (the org-level NPI column; `sites.npi` holds HRSA-sourced NPIs and is not modified by the NPPES pipeline). Uses two SQL statements per 500-row batch: a `CASE`-expression `UPDATE sites` and an `IN`-list `UPDATE npi_match_candidates SET status = 'promoted'`. After the promotion loop, all remaining `conflict` candidates are transitioned to `requires_review` in a single bulk update — they are never auto-promoted. `--dry-run` logs what would be promoted and counts conflicts without writing anything.
 
-Real-data promotion results (dev, 2026-05-12): 8,337 accepted promoted; 694 conflicts held for review.
+Real-data promotion results (dev, 2026-05-12): 8,350 accepted promoted; 678 conflicts transitioned to `requires_review`. After Stages 4 and 5, `org_npi` coverage is 46.1% (8,717 / 18,911 sites); 427 `requires_review` candidates remain for individual human review.
 
 **Stage 4 — Bulk-accept pending** (`bulk_accept_pending.py`):  
 Post-pipeline step for promoting high-confidence `pending` candidates without full human review. Tier 2 candidates with score ≥ 0.84 and Tier 3 candidates with score ≥ 0.95 qualify. Writes `candidate_npi` to `sites.org_npi` (same target as Stage 3), but only for sites where `org_npi IS NULL` — will not overwrite a value already set by Stage 3 or manual review. Creates an `IngestRun` record for observability. Default is dry-run; pass `--execute` to apply. Also available via `make bulk-accept-pending` / `make bulk-accept-pending-execute`.
+
+**Stage 5 — Bulk-accept conflicts** (`bulk_accept_conflicts.py`):  
+Post-pipeline step for promoting high-confidence `requires_review` candidates (originally written as `conflict` by the match step, then transitioned to `requires_review` by the promote step). Qualifies candidates where `status = 'requires_review'`, `match_tier = 1`, `match_score ≥ 0.90`, and `sites.org_npi IS NULL`. The `IS NULL` check is part of the streaming SELECT query (JOIN on `Site`), not a post-filter — candidates for sites that already have an `org_npi` never enter the processing loop. Sets `reviewed_by = 'bulk_accept_conflicts'`. Default is dry-run; pass `--execute` to apply. Also available via `make bulk-accept-conflicts` / `make bulk-accept-conflicts-execute`.
 
 **`npi_match_candidates` status lifecycle:**
 
@@ -154,7 +160,18 @@ Post-pipeline step for promoting high-confidence `pending` candidates without fu
 
 ### API layer
 
-Routers live in `app/routers/` and are registered on the `app` instance in `app/main.py`. The current review router mounts at `/review/*` (not `/api/v1/review/*`); the `app/api/v1/` directory exists but is currently empty. The `/review-ui/` static mount in `main.py` serves the built frontend from `frontend/review/dist/` when present.
+**Internal review router** — `app/routers/review.py`, mounted at `/review/*`. Handles the NPI match review queue (counts, paginated queue, accept/reject actions). Do not move or modify its prefix.
+
+**Public versioned API** — `app/api/v1/`, mounted at `/api/v1` via `app/api/v1/router.py`. Composed of:
+- `app/api/v1/sites.py` — `GET /api/v1/sites/nearby` (PostGIS radius search) and `GET /api/v1/sites/{bhcmis_id}`
+- `app/api/v1/organizations.py` — `GET /api/v1/organizations/{id}` and `GET /api/v1/organizations/{id}/sites`
+- `app/api/v1/schemas.py` — Pydantic v2 response models (`SiteResponse`, `OrganizationResponse`, `SiteWithDistanceResponse`)
+
+Route registration order matters: `/sites/nearby` must be registered before `/sites/{bhcmis_id}` to prevent FastAPI matching the literal string `"nearby"` as a `bhcmis_id` path parameter. This is enforced by the order of `@router.get` decorators in `sites.py`.
+
+PostGIS geometry notes: `ST_Y` / `ST_X` require `geometry`, not `geography`. Extract coordinates using `cast(Site.location, Geometry())` (SQLAlchemy's `cast`, not `type_coerce` — `type_coerce` does not emit a SQL CAST clause). For the nearby search point, use `type_coerce(func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326), Geography())` — argument order is longitude first, then latitude.
+
+The `/review-ui/` static mount in `main.py` serves the built frontend from `frontend/review/dist/` when present.
 
 ### Migrations
 

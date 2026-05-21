@@ -120,12 +120,15 @@ Matches HRSA FQHC sites against the 9.5M-row CMS NPPES provider registry and wri
 uv run python -m app.scripts.ingest_nppes [--csv PATH] [--replace]
 uv run python -m app.scripts.match_nppes_sites [--replace]
 uv run python -m app.scripts.promote_npi_matches [--dry-run]
-uv run python -m app.scripts.bulk_accept_pending [--execute]   # dry-run by default
+uv run python -m app.scripts.bulk_accept_pending [--execute]          # dry-run by default
+uv run python -m app.scripts.bulk_accept_conflicts [--execute]        # dry-run by default
 ```
 
 ### Stage 1 — Ingest (`ingest_nppes.py`)
 
 Filters NPPES CSV to FQHC organizations only: Entity Type 2 + taxonomy `261QF0400X` + no deactivation date. ~0.19% pass rate → ~18K rows staged in `raw_nppes_providers`.
+
+Before processing any data rows, the script validates that the CSV contains all required column headers. A missing column raises a descriptive `ValueError` that names the missing columns, marks the `IngestRun` as `failed`, and exits non-zero. A CSV with correct headers but zero rows that pass the filter is still a successful run (`row_count = 0`).
 
 ### Stage 2 — Match (`match_nppes_sites.py`)
 
@@ -165,6 +168,22 @@ make bulk-accept-pending          # dry-run
 make bulk-accept-pending-execute  # apply
 ```
 
+### Stage 5 — Bulk-accept conflicts (`bulk_accept_conflicts.py`)
+
+Promotes high-confidence `requires_review` candidates (originally flagged as conflicts) that are safe to auto-promote without individual human review. A candidate qualifies if ALL of:
+
+- `status = 'requires_review'`
+- `match_tier = 1` (exact address match)
+- `match_score ≥ 0.90`
+- `sites.org_npi IS NULL`
+
+The `IS NULL` check is part of the streaming query, not a post-filter — no candidate where the site already has an `org_npi` enters the processing loop. Writes `reviewed_by = 'bulk_accept_conflicts'` for provenance tracking. Default is dry-run.
+
+```bash
+make bulk-accept-conflicts          # dry-run
+make bulk-accept-conflicts-execute  # apply
+```
+
 ### `npi_match_candidates` Status Lifecycle
 
 | Status | Meaning |
@@ -178,9 +197,48 @@ make bulk-accept-pending-execute  # apply
 
 ---
 
+## Public API
+
+Versioned REST API under `/api/v1/`. Implemented in `app/api/v1/`.
+
+### Sites
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/v1/sites/nearby` | Sites within radius of a lat/lon point. Returns `distance_km`. |
+| `GET /api/v1/sites/{bhcmis_id}` | Look up a single site by HRSA `bhcmis_id`. |
+
+**Nearby query parameters:**
+
+| Param | Default | Max | Notes |
+|---|---|---|---|
+| `lat` | required | — | Must be −90 to 90 |
+| `lon` | required | — | Must be −180 to 180 |
+| `radius_km` | 25 | 100 | Clamped silently |
+| `limit` | 20 | 100 | Clamped silently |
+
+Uses `ST_DWithin` on the PostGIS `Geography` column. Distances via `ST_Distance`, rounded to 2 decimal places. Results ordered by distance ASC.
+
+### Organizations
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/v1/organizations/{id}` | Look up an organization by UUID. |
+| `GET /api/v1/organizations/{id}/sites` | All sites for an organization, ordered by `site_name`. |
+
+### Response fields
+
+`SiteResponse` includes both NPI columns:
+- `npi` — HRSA-sourced site-level NPI (`sites.npi`), read-only from this pipeline
+- `org_npi` — NPPES-promoted org-level NPI (`sites.org_npi`), written by the enrichment pipeline
+
+`latitude` / `longitude` are `null` for the ~0.3% of sites without a geocoded location.
+
+---
+
 ## Review API
 
-REST endpoints for human review of the NPI match queue. Mounts at `/review/*`.
+Internal REST endpoints for human review of the NPI match queue. Mounts at `/review/*`.
 
 | Endpoint | Description |
 |---|---|
@@ -234,7 +292,7 @@ GeoAlchemy2 registers helpers in `alembic/env.py`. When autogenerating migration
 ## Known Open Items
 
 - `organizations.npi` is NULL for all rows — org-level NPI enrichment not yet built
-- ~41% of FQHC sites have no NPPES match (6,962 no-match + 1,976 pending); secondary enrichment strategy TBD
-- 678 conflict candidates with edit distance > 2 need manual review before promotion
-- No tests for `match_nppes_sites.py`, `promote_npi_matches.py`, or `bulk_accept_pending.py`
-- `app/api/v1/` directory exists but is currently empty — no versioned API yet
+- ~41% of FQHC sites have no NPPES match (6,962 no-match); secondary enrichment strategy TBD
+- 427 `requires_review` candidates remain for individual human review via the UI (lower-confidence conflicts below the bulk-accept threshold)
+- No tests for the NPPES pipeline scripts (`match_nppes_sites.py`, `promote_npi_matches.py`, `bulk_accept_pending.py`, `bulk_accept_conflicts.py`) or the public API (`app/api/v1/`)
+- `website` field in `SiteResponse` is always `null` — not present in current HRSA data
