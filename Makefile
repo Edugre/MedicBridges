@@ -1,4 +1,4 @@
-.PHONY: review review-dev bulk-accept-pending bulk-accept-pending-execute
+.PHONY: review review-dev bulk-accept-pending bulk-accept-pending-execute bulk-accept-conflicts bulk-accept-conflicts-execute
 
 review: ## Build frontend then start FastAPI (http://localhost:8000/review-ui/)
 	cd frontend/review && npm run build
@@ -15,3 +15,9 @@ bulk-accept-pending: ## Dry-run: show how many pending candidates qualify for bu
 
 bulk-accept-pending-execute: ## Execute: bulk-promote qualifying pending candidates
 	cd backend && uv run python -m app.scripts.bulk_accept_pending --execute
+
+bulk-accept-conflicts: ## Dry-run: show how many requires_review T1 candidates qualify for bulk promotion
+	cd backend && uv run python -m app.scripts.bulk_accept_conflicts
+
+bulk-accept-conflicts-execute: ## Execute: bulk-promote qualifying requires_review T1 candidates
+	cd backend && uv run python -m app.scripts.bulk_accept_conflicts --execute
