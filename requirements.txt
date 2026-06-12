@@ -1,0 +1,7 @@
+pandas
+supabase
+python-dotenv
+requests
+openpyxl
+beautifulsoup4
+lxml
