@@ -28,5 +28,9 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 
-#data
+# Data — local inputs, cache, and generated outputs
+/data/raw/
+/data/cache/
+/data/output/
 /data/**/*.csv
+/logs/
