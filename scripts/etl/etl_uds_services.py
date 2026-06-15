@@ -1,28 +1,25 @@
-"""ETL: HRSA UDS Table 5 (org-level services) -> Supabase org_services + site_services.
+"""ETL: HRSA UDS Table 5 -> staging.uds_org_service -> site_service.
 
-Downloads the public per-awardee UDS workbooks (H80 awardees + LAL look-alikes),
-derives which services each health center organization offers from Table 5
-staffing/utilization lines, and propagates those services to the organization's
-active service-delivery sites in `fqhc_site`.
+Downloads the public per-awardee UDS workbooks (H80 + LAL), derives which
+services each organization offers from Table 5 staffing/utilization lines, and
+loads (grant_number, service_id) pairs into staging. The transform RPC then
+propagates them to each organization's active service-delivery sites (the
+canonical service grain), preserving any independent verification already set.
 
 Usage:
-    python -m scripts.etl.etl_uds_services [--state FL]
+    python -m scripts.etl.etl_uds_services
 """
 
 from __future__ import annotations
 
-import argparse
-import os
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
-from supabase import create_client
 
-from scripts.paths import ROOT, UDS_DIR, ensure_data_dirs
-from scripts.supabase_etl import etl_run
+from scripts.db import get_client, load_staging
+from scripts.paths import UDS_DIR, ensure_data_dirs
+from scripts.supabase_etl import etl_run, utc_now_iso
 
 UDS_FILES = {
     "H80": "https://data.hrsa.gov/DataDownload/StaticDocuments/H80-2024.xlsx",
@@ -30,49 +27,30 @@ UDS_FILES = {
 }
 
 DATA_SOURCE = "HRSA UDS 2024 Table 5 (org-level)"
-UPSERT_BATCH_SIZE = 500
+STAGING_TABLE = "uds_org_service"
+STAGE_RPC = "stage_uds_org_service"
 
-# service_catalog.service_id -> Table 5 columns that indicate the service.
-# A service is considered offered when any mapped column is numeric and > 0.
-# Pediatric Dentistry (6) is not derivable from Table 5 and is left to the
-# website-scraping pass.
+# service.service_id -> Table 5 columns that indicate the service.
+# A service is offered when any mapped column is numeric and > 0.
 SERVICE_COLUMN_MAP: dict[int, list[str]] = {
-    # Primary Care / Preventive Health <- Total Medical Care Services (L15)
     1: ["T5_L15_Ca", "T5_L15_Cb", "T5_L15_Cb2", "T5_L15_Cc"],
     2: ["T5_L15_Ca", "T5_L15_Cb", "T5_L15_Cb2", "T5_L15_Cc"],
-    # Pediatrics <- Pediatricians (L5)
     3: ["T5_L5_Ca", "T5_L5_Cb", "T5_L5_Cb2"],
-    # OB/GYN <- Obstetrician/Gynecologists (L4)
     4: ["T5_L4_Ca", "T5_L4_Cb", "T5_L4_Cb2"],
-    # General Dentistry <- Total Dental Services (L19)
     5: ["T5_L19_Ca", "T5_L19_Cb", "T5_L19_Cb2", "T5_L19_Cc"],
-    # Mental Health Counseling <- Total Mental Health Services (L20)
     7: ["T5_L20_Ca", "T5_L20_Cb", "T5_L20_Cb2", "T5_L20_Cc"],
-    # Psychiatry <- Psychiatrists (L20a)
     8: ["T5_L20a_Ca", "T5_L20a_Cb", "T5_L20a_Cb2"],
-    # Substance Use Disorder Treatment <- SUD Services (L21)
     9: ["T5_L21_Ca", "T5_L21_Cb", "T5_L21_Cb2", "T5_L21_Cc"],
-    # Diagnostic Laboratory <- Laboratory Personnel (L13)
     10: ["T5_L13_Ca"],
-    # Diagnostic Radiology <- X-ray Personnel (L14)
     11: ["T5_L14_Ca"],
-    # Optometry & Vision Care <- Total Vision Services (L22d)
     12: ["T5_L22d_Ca", "T5_L22d_Cb", "T5_L22d_Cb2", "T5_L22d_Cc"],
-    # Pharmacy / 340B Dispensary <- Pharmacy Personnel (L23)
     13: ["T5_L23_Ca"],
-    # Case Management <- Case Managers (L24)
     14: ["T5_L24_Ca", "T5_L24_Cb", "T5_L24_Cb2"],
-    # Translation & Interpretation <- Interpretation Personnel (L27b)
     15: ["T5_L27b_Ca"],
-    # Patient Transportation <- Transportation Personnel (L27)
     16: ["T5_L27_Ca"],
 }
 
 ALL_T5_COLUMNS = sorted({col for cols in SERVICE_COLUMN_MAP.values() for col in cols})
-
-
-def normalize_supabase_url(url: str) -> str:
-    return url.rstrip("/").removesuffix("/rest/v1")
 
 
 def download_workbooks() -> dict[str, Path]:
@@ -90,10 +68,9 @@ def download_workbooks() -> dict[str, Path]:
 
 
 def load_org_services(workbook_path: Path, source_url: str) -> dict[str, dict]:
-    """Return {grant_number: {"services": set[int], "suppressed": bool}}."""
+    """Return {grant_number: {"services": set[int], "suppressed": bool, "source_url": str}}."""
     table5 = pd.read_excel(workbook_path, sheet_name="Table5", dtype=str)
-    # Row 0 holds human-readable column labels; data starts at row 1.
-    table5 = table5.iloc[1:].copy()
+    table5 = table5.iloc[1:].copy()  # row 0 holds human-readable labels
     table5 = table5[table5["GrantNumber"].notna()]
 
     missing = [col for col in ALL_T5_COLUMNS if col not in table5.columns]
@@ -101,12 +78,9 @@ def load_org_services(workbook_path: Path, source_url: str) -> dict[str, dict]:
         raise ValueError(f"{workbook_path.name} Table5 missing expected columns: {missing}")
 
     numeric = table5[ALL_T5_COLUMNS].apply(pd.to_numeric, errors="coerce")
-
     orgs: dict[str, dict] = {}
     for idx, grant_number in table5["GrantNumber"].items():
         row = numeric.loc[idx]
-        # Orgs that did not consent to release Table 5 have all values suppressed
-        # ('---' -> NaN); treat them as "no data" rather than "no services".
         if row.isna().all():
             orgs[grant_number.strip()] = {"services": set(), "suppressed": True, "source_url": source_url}
             continue
@@ -119,146 +93,23 @@ def load_org_services(workbook_path: Path, source_url: str) -> dict[str, dict]:
     return orgs
 
 
-def fetch_target_sites(client, state: str) -> list[dict]:
-    """Active service-delivery sites (admin-only sites excluded) for the state."""
-    sites: list[dict] = []
-    page_size = 1000
-    offset = 0
-    while True:
-        response = (
-            client.table("fqhc_site")
-            .select("bphc_site_num,org_id,hcp_merged_grant_lal_key,hcc_typ_desc")
-            .eq("site_state_abbr", state)
-            .range(offset, offset + page_size - 1)
-            .execute()
-        )
-        batch = response.data or []
-        sites.extend(batch)
-        if len(batch) < page_size:
-            break
-        offset += page_size
-    return [
-        site
-        for site in sites
-        if site.get("hcp_merged_grant_lal_key")
-        and "Service Delivery" in (site.get("hcc_typ_desc") or "")
-    ]
-
-
-def fetch_existing_pairs(client, site_nums: list[str]) -> dict[tuple[str, int], dict]:
-    existing: dict[tuple[str, int], dict] = {}
-    chunk_size = 50
-    page_size = 1000
-    for start in range(0, len(site_nums), chunk_size):
-        chunk = site_nums[start : start + chunk_size]
-        offset = 0
-        while True:
-            response = (
-                client.table("site_services")
-                .select("bphc_site_num,service_id,data_source,is_verified")
-                .in_("bphc_site_num", chunk)
-                .range(offset, offset + page_size - 1)
-                .execute()
-            )
-            rows = response.data or []
-            for row in rows:
-                existing[(row["bphc_site_num"], row["service_id"])] = row
-            if len(rows) < page_size:
-                break
-            offset += page_size
-    return existing
-
-
-def build_rows(
-    sites: list[dict],
-    org_services: dict[str, dict],
-    existing: dict[tuple[str, int], dict],
-) -> tuple[list[dict], list[dict], dict]:
-    extracted_at = datetime.now(timezone.utc).isoformat()
-    site_rows: list[dict] = []
-    org_rows: dict[tuple[str, int], dict] = {}
-    stats = {"matched_orgs": set(), "unmatched_orgs": set(), "suppressed_orgs": set(), "sites": 0}
-
-    for site in sites:
-        key = site["hcp_merged_grant_lal_key"].strip()
-        org_id = site.get("org_id")
-        org = org_services.get(key)
-        if org is None:
-            stats["unmatched_orgs"].add(key)
+def build_staging_rows(org_services: dict[str, dict]) -> list[dict]:
+    rows: list[dict] = []
+    for grant_number, info in org_services.items():
+        if info["suppressed"]:
             continue
-        if org["suppressed"]:
-            stats["suppressed_orgs"].add(key)
-            continue
-        stats["matched_orgs"].add(key)
-        stats["sites"] += 1
-        for service_id in sorted(org["services"]):
-            if org_id:
-                org_pair = (org_id, service_id)
-                if org_pair not in org_rows:
-                    org_rows[org_pair] = {
-                        "org_id": org_id,
-                        "service_id": service_id,
-                        "data_source": DATA_SOURCE,
-                        "is_verified": False,
-                        "source_url": org["source_url"],
-                        "confidence": None,
-                        "extracted_at": extracted_at,
-                    }
-
-            current = existing.get((site["bphc_site_num"], service_id))
-            independent = (
-                current is not None
-                and not current["data_source"].startswith("HRSA")
-                and current["data_source"] != "Federal Mandate Assumption"
-            )
-            verified = bool(current and (current["is_verified"] or independent))
-            site_rows.append(
+        for service_id in sorted(info["services"]):
+            rows.append(
                 {
-                    "bphc_site_num": site["bphc_site_num"],
-                    "service_id": service_id,
-                    "data_source": DATA_SOURCE,
-                    "is_verified": verified,
-                    "source_url": org["source_url"],
-                    "confidence": None,
-                    "extracted_at": extracted_at,
+                    "grant_number": grant_number,
+                    "service_id": str(service_id),
+                    "source_url": info["source_url"],
                 }
             )
-    return list(org_rows.values()), site_rows, stats
-
-
-def upsert_org_services(client, rows: list[dict], batch_size: int = UPSERT_BATCH_SIZE) -> None:
-    total = len(rows)
-    for start in range(0, total, batch_size):
-        batch = rows[start : start + batch_size]
-        client.table("org_services").upsert(
-            batch,
-            on_conflict="org_id,service_id",
-        ).execute()
-        print(f"Upserted org-service rows {start + 1}-{min(start + batch_size, total)} of {total}")
-
-
-def upsert_in_batches(client, rows: list[dict], batch_size: int = UPSERT_BATCH_SIZE) -> None:
-    total = len(rows)
-    for start in range(0, total, batch_size):
-        batch = rows[start : start + batch_size]
-        client.table("site_services").upsert(
-            batch,
-            on_conflict="bphc_site_num,service_id",
-        ).execute()
-        print(f"Upserted rows {start + 1}-{min(start + batch_size, total)} of {total}")
+    return rows
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--state", default="FL", help="Two-letter state code (default: FL)")
-    args = parser.parse_args()
-
-    load_dotenv(ROOT / ".env")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-    if not supabase_url or not supabase_key:
-        raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in the .env file.")
-
     paths = download_workbooks()
     org_services: dict[str, dict] = {}
     for label, path in paths.items():
@@ -266,30 +117,21 @@ def main() -> None:
         print(f"{label}: parsed Table 5 for {len(loaded)} organizations")
         org_services.update(loaded)
 
-    client = create_client(normalize_supabase_url(supabase_url), supabase_key)
-    sites = fetch_target_sites(client, args.state.upper())
-    print(f"{len(sites)} active service-delivery sites in {args.state.upper()}")
+    rows = build_staging_rows(org_services)
+    suppressed = sum(1 for info in org_services.values() if info["suppressed"])
+    print(f"Prepared {len(rows)} org-service rows ({suppressed} orgs suppressed/no UDS consent)")
 
-    existing = fetch_existing_pairs(client, [site["bphc_site_num"] for site in sites])
-    org_rows, site_rows, stats = build_rows(sites, org_services, existing)
-    print(
-        f"Orgs matched: {len(stats['matched_orgs'])}, "
-        f"suppressed (no UDS consent): {len(stats['suppressed_orgs'])}, "
-        f"not in UDS files: {len(stats['unmatched_orgs'])}"
-    )
-    if stats["unmatched_orgs"]:
-        print("Unmatched org keys:", ", ".join(sorted(stats["unmatched_orgs"])))
-    if stats["suppressed_orgs"]:
-        print("Suppressed org keys:", ", ".join(sorted(stats["suppressed_orgs"])))
-    print(
-        f"Prepared {len(org_rows)} org-service rows and "
-        f"{len(site_rows)} site-service rows across {stats['sites']} sites."
-    )
+    client = get_client()
+    with etl_run(client, "etl_uds_services", source_file=DATA_SOURCE) as run:
+        run_ts = utc_now_iso()
+        staged = load_staging(client, STAGING_TABLE, STAGE_RPC, rows, source_file=DATA_SOURCE)
+        print(f"Staged {staged} rows; propagating to sites...")
+        site_rows = client.rpc(
+            "transform_uds_services", {"p_ts": run_ts, "p_data_source": DATA_SOURCE}
+        ).execute().data
+        print(f"Site-service rows upserted: {site_rows}")
+        run.add_rows(int(site_rows or 0))
 
-    with etl_run(client, "etl_uds_services", source_file="HRSA UDS 2024 Table 5") as run:
-        upsert_org_services(client, org_rows)
-        upsert_in_batches(client, site_rows)
-        run.add_rows(len(org_rows) + len(site_rows))
     print("ETL complete.")
 
 

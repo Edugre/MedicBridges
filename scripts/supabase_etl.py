@@ -51,18 +51,17 @@ def etl_run(client, pipeline_name: str, source_file: str | None = None) -> Itera
         status = "failed"
         raise
     finally:
-        if run_id is None:
-            return
-        payload: dict = {
-            "finished_at": utc_now_iso(),
-            "status": status,
-            "rows_affected": rows_affected or None,
-            "error_message": str(error) if error else None,
-        }
-        try:
-            client.table("etl_run").update(payload).eq("run_id", run_id).execute()
-        except Exception as exc:
-            print(f"Warning: could not finalize etl_run record ({exc})")
+        if run_id is not None:
+            payload: dict = {
+                "finished_at": utc_now_iso(),
+                "status": status,
+                "rows_affected": rows_affected or None,
+                "error_message": str(error) if error else None,
+            }
+            try:
+                client.table("etl_run").update(payload).eq("run_id", run_id).execute()
+            except Exception as exc:
+                print(f"Warning: could not finalize etl_run record ({exc})")
 
 
 def stamp_last_refreshed(records: list[dict], refreshed_at: str | None = None) -> list[dict]:

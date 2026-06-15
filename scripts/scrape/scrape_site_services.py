@@ -1,9 +1,9 @@
-"""Scrape FQHC site websites and extract offered services -> Supabase site_services.
+"""Scrape FQHC site websites and extract offered services -> Supabase site_service.
 
 For each active service-delivery site in the target state, fetches the site's
 listed website (falling back to the most common URL among the same
 organization's sites), crawls the homepage plus a few likely services pages,
-and maps page text onto `service_catalog` entries using keyword/phrase
+and maps page text onto `service` catalog entries using keyword/phrase
 matching with per-service confidence scores.
 
 Rows are written with data_source='Site website (keyword extraction)' and never
@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import os
 import re
 import time
 import urllib.parse
@@ -27,10 +26,9 @@ from datetime import datetime, timezone
 import requests
 import urllib3
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-from supabase import create_client
 
-from scripts.paths import ROOT, SCRAPE_FAILURES_CSV, SITE_HTML_DIR, ensure_data_dirs
+from scripts.db import get_client
+from scripts.paths import SCRAPE_FAILURES_CSV, SITE_HTML_DIR, ensure_data_dirs
 
 DATA_SOURCE = "Site website (keyword extraction)"
 REQUEST_TIMEOUT = 20
@@ -187,9 +185,9 @@ def fetch_sites(client, state: str) -> list[dict]:
     offset = 0
     while True:
         response = (
-            client.table("fqhc_site")
-            .select("bphc_site_num,site_url,hcp_merged_grant_lal_key,hcc_typ_desc")
-            .eq("site_state_abbr", state)
+            client.table("v_site")
+            .select("site_id,bphc_site_num,website,org_website,grant_number,center_type")
+            .eq("state", state)
             .range(offset, offset + page_size - 1)
             .execute()
         )
@@ -198,29 +196,29 @@ def fetch_sites(client, state: str) -> list[dict]:
         if len(batch) < page_size:
             break
         offset += page_size
-    return [s for s in sites if "Service Delivery" in (s.get("hcc_typ_desc") or "")]
+    return [s for s in sites if "Service Delivery" in (s.get("center_type") or "")]
 
 
-def fetch_protected_pairs(client, site_nums: list[str]) -> set[tuple[str, int]]:
-    """(site, service) pairs sourced from HRSA datasets; never overwritten."""
+def fetch_protected_pairs(client, site_ids: list[str]) -> set[tuple[str, int]]:
+    """(site_id, service) pairs sourced from HRSA datasets; never overwritten."""
     protected: set[tuple[str, int]] = set()
     chunk_size = 200
     page_size = 1000
-    for start in range(0, len(site_nums), chunk_size):
-        chunk = site_nums[start : start + chunk_size]
+    for start in range(0, len(site_ids), chunk_size):
+        chunk = site_ids[start : start + chunk_size]
         offset = 0
         while True:
             response = (
-                client.table("site_services")
-                .select("bphc_site_num,service_id,data_source")
-                .in_("bphc_site_num", chunk)
+                client.table("site_service")
+                .select("site_id,service_id,data_source")
+                .in_("site_id", chunk)
                 .like("data_source", "HRSA%")
                 .range(offset, offset + page_size - 1)
                 .execute()
             )
             rows = response.data or []
             for row in rows:
-                protected.add((row["bphc_site_num"], row["service_id"]))
+                protected.add((row["site_id"], row["service_id"]))
             if len(rows) < page_size:
                 break
             offset += page_size
@@ -231,16 +229,16 @@ def assign_fallback_urls(sites: list[dict]) -> None:
     """Sites with no URL inherit the most common URL among their org's sites."""
     org_urls: dict[str, dict[str, int]] = {}
     for site in sites:
-        url = normalize_site_url(site.get("site_url"))
+        url = normalize_site_url(site.get("website") or site.get("org_website"))
         site["resolved_url"] = url
-        org = site.get("hcp_merged_grant_lal_key")
+        org = site.get("grant_number")
         if url and org:
             org_urls.setdefault(org, {})
             org_urls[org][url] = org_urls[org].get(url, 0) + 1
     for site in sites:
         if site["resolved_url"]:
             continue
-        org = site.get("hcp_merged_grant_lal_key")
+        org = site.get("grant_number")
         counts = org_urls.get(org)
         if counts:
             site["resolved_url"] = max(counts, key=counts.get)
@@ -250,9 +248,9 @@ def upsert_in_batches(client, rows: list[dict], batch_size: int = UPSERT_BATCH_S
     total = len(rows)
     for start in range(0, total, batch_size):
         batch = rows[start : start + batch_size]
-        client.table("site_services").upsert(
+        client.table("site_service").upsert(
             batch,
-            on_conflict="bphc_site_num,service_id",
+            on_conflict="site_id,service_id",
         ).execute()
         print(f"Upserted rows {start + 1}-{min(start + batch_size, total)} of {total}")
 
@@ -264,14 +262,8 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None, help="Max distinct URLs to scrape (for testing)")
     args = parser.parse_args()
 
-    load_dotenv(ROOT / ".env")
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_KEY")
-    if not supabase_url or not supabase_key:
-        raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in the .env file.")
-
     ensure_data_dirs()
-    client = create_client(normalize_supabase_url(supabase_url), supabase_key)
+    client = get_client()
 
     sites = fetch_sites(client, args.state.upper())
     assign_fallback_urls(sites)
@@ -286,7 +278,7 @@ def main() -> None:
         urls = urls[: args.limit]
     print(f"Scraping {len(urls)} distinct URLs")
 
-    protected = fetch_protected_pairs(client, [s["bphc_site_num"] for s in sites_with_url])
+    protected = fetch_protected_pairs(client, [s["site_id"] for s in sites_with_url])
 
     session = requests.Session()
     session.headers["User-Agent"] = USER_AGENT
@@ -305,11 +297,11 @@ def main() -> None:
         print(f"[{index}/{len(urls)}] OK {url} -> {sorted(kept)}")
         for site in url_to_sites[url]:
             for service_id, (confidence, page_url) in kept.items():
-                if (site["bphc_site_num"], service_id) in protected:
+                if (site["site_id"], service_id) in protected:
                     continue
                 rows.append(
                     {
-                        "bphc_site_num": site["bphc_site_num"],
+                        "site_id": site["site_id"],
                         "service_id": service_id,
                         "data_source": DATA_SOURCE,
                         "is_verified": False,
