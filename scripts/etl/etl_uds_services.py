@@ -1,4 +1,4 @@
-"""ETL: HRSA UDS Table 5 (org-level services) -> Supabase site_services.
+"""ETL: HRSA UDS Table 5 (org-level services) -> Supabase org_services + site_services.
 
 Downloads the public per-awardee UDS workbooks (H80 awardees + LAL look-alikes),
 derives which services each health center organization offers from Table 5
@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from supabase import create_client
 
 from scripts.paths import ROOT, UDS_DIR, ensure_data_dirs
+from scripts.supabase_etl import etl_run
 
 UDS_FILES = {
     "H80": "https://data.hrsa.gov/DataDownload/StaticDocuments/H80-2024.xlsx",
@@ -126,7 +127,7 @@ def fetch_target_sites(client, state: str) -> list[dict]:
     while True:
         response = (
             client.table("fqhc_site")
-            .select("bphc_site_num,hcp_merged_grant_lal_key,hcc_typ_desc")
+            .select("bphc_site_num,org_id,hcp_merged_grant_lal_key,hcc_typ_desc")
             .eq("site_state_abbr", state)
             .range(offset, offset + page_size - 1)
             .execute()
@@ -172,13 +173,15 @@ def build_rows(
     sites: list[dict],
     org_services: dict[str, dict],
     existing: dict[tuple[str, int], dict],
-) -> tuple[list[dict], dict]:
+) -> tuple[list[dict], list[dict], dict]:
     extracted_at = datetime.now(timezone.utc).isoformat()
-    rows: list[dict] = []
+    site_rows: list[dict] = []
+    org_rows: dict[tuple[str, int], dict] = {}
     stats = {"matched_orgs": set(), "unmatched_orgs": set(), "suppressed_orgs": set(), "sites": 0}
 
     for site in sites:
         key = site["hcp_merged_grant_lal_key"].strip()
+        org_id = site.get("org_id")
         org = org_services.get(key)
         if org is None:
             stats["unmatched_orgs"].add(key)
@@ -189,16 +192,27 @@ def build_rows(
         stats["matched_orgs"].add(key)
         stats["sites"] += 1
         for service_id in sorted(org["services"]):
+            if org_id:
+                org_pair = (org_id, service_id)
+                if org_pair not in org_rows:
+                    org_rows[org_pair] = {
+                        "org_id": org_id,
+                        "service_id": service_id,
+                        "data_source": DATA_SOURCE,
+                        "is_verified": False,
+                        "source_url": org["source_url"],
+                        "confidence": None,
+                        "extracted_at": extracted_at,
+                    }
+
             current = existing.get((site["bphc_site_num"], service_id))
-            # A pair already claimed by an independent (non-HRSA, non-assumption)
-            # source is corroborated by UDS -> verified. Never un-verify.
             independent = (
                 current is not None
                 and not current["data_source"].startswith("HRSA")
                 and current["data_source"] != "Federal Mandate Assumption"
             )
             verified = bool(current and (current["is_verified"] or independent))
-            rows.append(
+            site_rows.append(
                 {
                     "bphc_site_num": site["bphc_site_num"],
                     "service_id": service_id,
@@ -209,7 +223,18 @@ def build_rows(
                     "extracted_at": extracted_at,
                 }
             )
-    return rows, stats
+    return list(org_rows.values()), site_rows, stats
+
+
+def upsert_org_services(client, rows: list[dict], batch_size: int = UPSERT_BATCH_SIZE) -> None:
+    total = len(rows)
+    for start in range(0, total, batch_size):
+        batch = rows[start : start + batch_size]
+        client.table("org_services").upsert(
+            batch,
+            on_conflict="org_id,service_id",
+        ).execute()
+        print(f"Upserted org-service rows {start + 1}-{min(start + batch_size, total)} of {total}")
 
 
 def upsert_in_batches(client, rows: list[dict], batch_size: int = UPSERT_BATCH_SIZE) -> None:
@@ -246,7 +271,7 @@ def main() -> None:
     print(f"{len(sites)} active service-delivery sites in {args.state.upper()}")
 
     existing = fetch_existing_pairs(client, [site["bphc_site_num"] for site in sites])
-    rows, stats = build_rows(sites, org_services, existing)
+    org_rows, site_rows, stats = build_rows(sites, org_services, existing)
     print(
         f"Orgs matched: {len(stats['matched_orgs'])}, "
         f"suppressed (no UDS consent): {len(stats['suppressed_orgs'])}, "
@@ -256,9 +281,15 @@ def main() -> None:
         print("Unmatched org keys:", ", ".join(sorted(stats["unmatched_orgs"])))
     if stats["suppressed_orgs"]:
         print("Suppressed org keys:", ", ".join(sorted(stats["suppressed_orgs"])))
-    print(f"Prepared {len(rows)} site-service rows across {stats['sites']} sites.")
+    print(
+        f"Prepared {len(org_rows)} org-service rows and "
+        f"{len(site_rows)} site-service rows across {stats['sites']} sites."
+    )
 
-    upsert_in_batches(client, rows)
+    with etl_run(client, "etl_uds_services", source_file="HRSA UDS 2024 Table 5") as run:
+        upsert_org_services(client, org_rows)
+        upsert_in_batches(client, site_rows)
+        run.add_rows(len(org_rows) + len(site_rows))
     print("ETL complete.")
 
 

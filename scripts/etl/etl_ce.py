@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from supabase import create_client
 
 from scripts.paths import ROOT, resolve_opais_json
+from scripts.supabase_etl import etl_run, stamp_last_refreshed, utc_now_iso
 
 COLUMN_MAP = {
     "340B ID": "opais_id",
@@ -214,13 +215,16 @@ def main() -> None:
 
     json_path = resolve_json_path()
     df = load_and_transform(json_path)
-    records = records_from_dataframe(df)
+    refreshed_at = utc_now_iso()
+    records = stamp_last_refreshed(records_from_dataframe(df), refreshed_at)
 
     print(f"Loaded source file: {json_path.name}")
     print(f"Prepared {len(records)} covered entity records for upsert.")
 
     client = create_client(normalize_supabase_url(supabase_url), supabase_key)
-    upsert_in_batches(client, records)
+    with etl_run(client, "etl_ce", source_file=json_path.name) as run:
+        upsert_in_batches(client, records)
+        run.add_rows(len(records))
 
     print("ETL complete.")
 

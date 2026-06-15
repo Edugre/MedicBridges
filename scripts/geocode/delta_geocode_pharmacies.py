@@ -11,6 +11,7 @@ import argparse
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from typing import Any
 import requests
 from dotenv import load_dotenv
@@ -116,13 +117,23 @@ def patch_coordinates(
     pharmacy_id: str,
     latitude: float,
     longitude: float,
+    *,
+    geocode_source: str = "nominatim",
+    geocode_status: str = "ok",
 ) -> None:
+    payload = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "geocode_source": geocode_source,
+        "geocode_status": geocode_status,
+        "geocoded_at": datetime.now(timezone.utc).isoformat(),
+    }
     max_retries = 5
     for attempt in range(max_retries):
         try:
             (
                 client.table(TABLE_NAME)
-                .update({"latitude": latitude, "longitude": longitude})
+                .update(payload)
                 .eq(PRIMARY_KEY, pharmacy_id)
                 .execute()
             )

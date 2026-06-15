@@ -19,12 +19,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from supabase import create_client
 
+from scripts.address import address_match_key
 from scripts.etl.etl_ce import extract_records, resolve_json_path
 from scripts.paths import ROOT
 from scripts.scrape.scrape_site_services import normalize_supabase_url
@@ -33,17 +33,6 @@ PHARMACY_SERVICE_ID = 13
 DATA_SOURCE = "OPAIS 340B (address match)"
 SOURCE_URL = "https://340bopais.hrsa.gov/coveredentitysearch"
 BATCH_SIZE = 500
-
-
-def street_zip_key(address: str | None, zip_code: str | None) -> tuple[str, str] | None:
-    if not address or not zip_code:
-        return None
-    zip5 = str(zip_code).strip()[:5]
-    cleaned = re.sub(r"[^a-z0-9 ]", " ", str(address).lower())
-    match = re.match(r"\s*(\d+)\s", cleaned)
-    if not match or not zip5:
-        return None
-    return match.group(1), zip5
 
 
 def load_shipping_addresses(known_opais_ids: set[str]) -> list[dict]:
@@ -125,14 +114,14 @@ def main() -> None:
     # CE street addresses plus their shipping addresses.
     state_ce = [row for row in ce_rows if (row.get("state") or "").upper() == state]
     state_ce_ids = {row["opais_id"] for row in state_ce}
-    address_keys: set[tuple[str, str]] = set()
+    address_keys: set[str] = set()
     for row in state_ce:
-        key = street_zip_key(row.get("address_line_1"), row.get("zip_code"))
+        key = address_match_key(row.get("address_line_1"), row.get("zip_code"))
         if key:
             address_keys.add(key)
     for row in shipping_rows:
         if row["opais_id"] in state_ce_ids and (row.get("state") or "").upper() == state:
-            key = street_zip_key(row.get("address_line_1"), row.get("zip_code"))
+            key = address_match_key(row.get("address_line_1"), row.get("zip_code"))
             if key:
                 address_keys.add(key)
     print(f"{len(address_keys)} distinct 340B address keys in {state}")
@@ -147,7 +136,7 @@ def main() -> None:
         site
         for site in sites
         if "Service Delivery" in (site.get("hcc_typ_desc") or "")
-        and street_zip_key(site.get("site_address"), site.get("site_zip_cd")) in address_keys
+        and address_match_key(site.get("site_address"), site.get("site_zip_cd")) in address_keys
     ]
     print(f"{len(pharmacy_sites)} sites match a 340B dispensing address")
 
@@ -200,10 +189,21 @@ def main() -> None:
             .execute()
         )
 
-    # Orgs in the state with no 340B covered entity.
-    ce_grants = {row["grant_number"] for row in ce_rows if row.get("grant_number")}
-    state_orgs = {site["hcp_merged_grant_lal_key"] for site in sites if site.get("hcp_merged_grant_lal_key")}
-    unlinked = sorted(org for org in state_orgs if org not in ce_grants)
+    # Orgs with sites in the state but no linked 340B covered entity.
+    state_grants = {site["hcp_merged_grant_lal_key"] for site in sites if site.get("hcp_merged_grant_lal_key")}
+    state_orgs: list[dict] = []
+    if state_grants:
+        state_orgs = fetch_all(
+            client,
+            "health_center_org",
+            "grant_number,org_name,opais_id",
+            filters=lambda q: q.in_("grant_number", sorted(state_grants)),
+        )
+    unlinked = sorted(
+        f"{org['grant_number']} ({org.get('org_name') or 'unknown'})"
+        for org in state_orgs
+        if org.get("grant_number") in state_grants and org.get("opais_id") is None
+    )
     print(f"{state} orgs without a 340B covered entity link: {unlinked or 'none'}")
     print("340B ETL complete.")
 

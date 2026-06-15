@@ -1,4 +1,4 @@
-"""ETL: Health Center sites CSV -> Supabase fqhc_site table."""
+"""ETL: Health Center sites CSV -> Supabase health_center_org + fqhc_site."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from supabase import create_client
 
 from scripts.paths import HRSA_SITES_CSV, ROOT
+from scripts.supabase_etl import etl_run, stamp_last_refreshed, utc_now_iso
+from scripts.supabase_orgs import attach_org_ids
 
 COLUMN_MAP = {
     "BPHC Assigned Number": "bphc_site_num",
@@ -94,7 +96,7 @@ def upsert_in_batches(supabase_client, records: list[dict], batch_size: int = UP
             on_conflict=PRIMARY_KEY,
         ).execute()
         end = min(start + batch_size, total)
-        print(f"Upserted rows {start + 1}-{end} of {total}")
+        print(f"Upserted site rows {start + 1}-{end} of {total}")
 
 
 def main() -> None:
@@ -110,12 +112,17 @@ def main() -> None:
         raise FileNotFoundError(f"CSV file not found: {HRSA_SITES_CSV}")
 
     df = load_and_transform(HRSA_SITES_CSV)
-    records = records_from_dataframe(df)
-
-    print(f"Prepared {len(records)} active site records for upsert.")
 
     client = create_client(normalize_supabase_url(supabase_url), supabase_key)
-    upsert_in_batches(client, records)
+    refreshed_at = utc_now_iso()
+
+    with etl_run(client, "etl_fqhc_sites", source_file=str(HRSA_SITES_CSV)) as run:
+        df = attach_org_ids(client, df, refreshed_at=refreshed_at)
+        records = stamp_last_refreshed(records_from_dataframe(df), refreshed_at)
+
+        print(f"Prepared {len(records)} active site records for upsert.")
+        upsert_in_batches(client, records)
+        run.add_rows(len(records))
 
     print("ETL complete.")
 
