@@ -5,3 +5,12 @@ requests
 openpyxl
 beautifulsoup4
 lxml
+
+# API (FastAPI service layer)
+fastapi
+uvicorn[standard]
+pydantic>=2
+pydantic-settings
+httpx
+pytest
+pytest-asyncio
