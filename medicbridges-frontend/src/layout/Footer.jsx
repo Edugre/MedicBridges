@@ -2,8 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 
-const footerLinkStyle = { color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem', fontFamily: "'DM Serif Text', Georgia, serif" };
-const footerHeadingStyle = { color: '#f5f0e8', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 400, fontFamily: "'DM Serif Display', Georgia, serif" };
+const footerLinkStyle = { color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem', fontFamily: "'Mulish', sans-serif" };
+const footerHeadingStyle = { color: '#f5f0e8', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 600, fontFamily: "'Figtree', sans-serif" };
 
 const Footer = () => {
   return (
@@ -12,7 +12,7 @@ const Footer = () => {
       padding: '4rem 2rem 2rem', 
       backgroundColor: '#1a2e1a',
       color: 'rgba(245,240,232,0.7)',
-      fontFamily: "'DM Serif Text', Georgia, serif",
+      fontFamily: "'Mulish', sans-serif",
     }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
@@ -24,7 +24,7 @@ const Footer = () => {
               <div style={{ background: 'var(--mb-lime)', color: '#2d3b2d', padding: '0.3rem', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Stethoscope size={18} />
               </div>
-              <span style={{ fontWeight: 400, fontSize: '1.15rem', color: '#f5f0e8', fontFamily: "'DM Serif Display', Georgia, serif" }}>MedicBridges</span>
+              <span style={{ fontWeight: 400, fontSize: '1.15rem', color: '#f5f0e8', fontFamily: "'Figtree', sans-serif" }}>MedicBridges</span>
             </div>
             <p style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>
               Connecting patients with free and low-cost healthcare in Miami-Dade.

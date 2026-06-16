@@ -6,7 +6,7 @@ const navLinkStyle = {
   fontWeight: 400,
   color: 'rgba(245,240,232,0.7)',
   transition: 'color 0.2s',
-  fontFamily: "'DM Serif Text', 'DM Serif Display', Georgia, serif",
+  fontFamily: "'Mulish', sans-serif",
   fontSize: '0.95rem',
 };
 
@@ -30,7 +30,7 @@ const Navbar = () => {
         maxWidth: '1400px',
         margin: '0 auto',
       }}>
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 400, fontSize: '1.25rem', color: '#f5f0e8', fontFamily: "'DM Serif Display', Georgia, serif" }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 400, fontSize: '1.25rem', color: '#f5f0e8', fontFamily: "'Figtree', sans-serif" }}>
           <div style={{ background: 'var(--mb-lime)', color: '#2d3b2d', padding: '0.35rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Stethoscope size={22} />
           </div>

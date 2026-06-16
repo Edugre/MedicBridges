@@ -1,80 +1,183 @@
-import React from 'react';
-import { MapPin, Navigation, SlidersHorizontal } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { MapPin, Navigation, AlertCircle, Pill } from 'lucide-react';
+import { searchNearby } from '../../api';
+import { useGeolocation } from '../../hooks/useGeolocation';
+import { formatAddress, formatDistance } from '../../lib/format';
+
+const RADIUS_OPTIONS = [1, 2, 5, 10, 20];
 
 const MapPage = () => {
+  const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
+
+  const [resourceType, setResourceType] = useState('all');
+  const [radiusKm, setRadiusKm] = useState(20);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const abortRef = useRef(null);
+
+  // Flatten orgs into sites + pharmacies as map points.
+  const points = useMemo(() => {
+    const orgs = data?.organizations || [];
+    const rows = [];
+    for (const org of orgs) {
+      if (resourceType !== 'pharmacy') {
+        for (const site of org.sites || []) {
+          if (site.latitude == null || site.longitude == null) continue;
+          rows.push({ kind: 'site', org, item: site, id: site.site_id });
+        }
+      }
+      if (resourceType !== 'site') {
+        for (const ph of org.contract_pharmacies || []) {
+          if (ph.latitude == null || ph.longitude == null) continue;
+          rows.push({ kind: 'pharmacy', org, item: ph, id: ph.pharmacy_id });
+        }
+      }
+    }
+    return rows.sort((a, b) => (a.item.distance_m ?? Infinity) - (b.item.distance_m ?? Infinity));
+  }, [data, resourceType]);
+
+  async function runSearch(center = coords) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await searchNearby({
+        lat: center.lat,
+        lon: center.lon,
+        radiusKm,
+        resourceTypes: resourceType === 'all' ? undefined : [resourceType],
+        signal: controller.signal,
+      });
+      setData(result);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      setError(err.message || 'Something went wrong.');
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    // Kick off the initial search on mount; runSearch manages its own state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    runSearch(coords);
+    return () => abortRef.current?.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleUseLocation() {
+    const center = await requestLocation();
+    runSearch(center);
+  }
+
+  const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : 'your area');
+
   return (
     <div className="map-wrapper" style={{ display: 'flex', height: 'calc(100vh - 80px)', width: '100%' }}>
-      
       {/* Filters Sidebar */}
       <aside className="map-sidebar" style={{ width: '350px', backgroundColor: 'var(--mb-bg-surface)', borderRight: '1px solid var(--mb-border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--mb-border)' }}>
           <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={24} /> Filters</h2>
         </div>
-        
+
         <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Quick Search</h3>
-          
           <div className="mb-input-group">
-            <label className="mb-label">Specialty / Type</label>
-            <select className="mb-select">
-              <option>Hospital</option>
-              <option>Clinic / Health Center</option>
-              <option>Doctor's Office</option>
-              <option>Dentist</option>
-              <option>Pharmacy</option>
+            <label className="mb-label">Type</label>
+            <select className="mb-select" value={resourceType} onChange={(e) => setResourceType(e.target.value)}>
+              <option value="all">All resources</option>
+              <option value="site">Clinics / Health Centers</option>
+              <option value="pharmacy">340B Pharmacies</option>
             </select>
           </div>
 
-          <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--mb-border)' }} />
-            <span style={{ fontSize: '0.85rem', color: 'var(--mb-text-muted)' }}>OR</span>
-            <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--mb-border)' }} />
-          </div>
-
-          <button className="mb-btn mb-btn-outline" style={{ width: '100%', marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+          <button className="mb-btn mb-btn-outline" onClick={handleUseLocation} style={{ width: '100%', margin: '1rem 0', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
             <Navigation size={18} /> Use My Current Location
           </button>
-          
-          <div style={{ textAlign: 'center', color: 'var(--mb-text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>enter manually</div>
-
-          <div className="mb-input-group">
-            <label className="mb-label">City or Address</label>
-            <input type="text" className="mb-input" placeholder="e.g. Miami, FL" />
-          </div>
 
           <div className="mb-input-group">
             <label className="mb-label">Search Radius</label>
-            <select className="mb-select">
-              <option>1 km — Walking distance</option>
-              <option>2 km</option>
-              <option>5 km</option>
-              <option>10 km</option>
-              <option>20 km</option>
+            <select className="mb-select" value={radiusKm} onChange={(e) => setRadiusKm(Number(e.target.value))}>
+              {RADIUS_OPTIONS.map((km) => (
+                <option key={km} value={km}>{km} km</option>
+              ))}
             </select>
           </div>
+
+          {geoError && (
+            <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--mb-text-muted)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+              <AlertCircle size={14} /> {geoError}
+            </p>
+          )}
         </div>
 
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--mb-border)', backgroundColor: 'var(--mb-bg-primary)' }}>
-          <button className="mb-btn mb-btn-secondary" style={{ width: '100%' }}>Apply filters</button>
+          <button className="mb-btn mb-btn-secondary" style={{ width: '100%' }} onClick={() => runSearch()} disabled={loading}>
+            {loading ? 'Searching…' : 'Apply filters'}
+          </button>
         </div>
       </aside>
 
-      {/* Map Area */}
-      <main style={{ flex: 1, position: 'relative', backgroundColor: '#d4cfc5', overflow: 'hidden' }}>
-        
-        {/* Mobile Filters Toggle */}
-        <button className="map-mobile-filters mb-btn mb-btn-secondary" style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, display: 'none' }}>
-          <SlidersHorizontal size={20} style={{ marginRight: '0.5rem' }} /> Filters
-        </button>
+      {/* Results Area */}
+      <main style={{ flex: 1, position: 'relative', backgroundColor: 'var(--mb-bg-primary)', overflowY: 'auto' }}>
+        <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--mb-border)', position: 'sticky', top: 0, backgroundColor: 'var(--mb-bg-primary)', zIndex: 5 }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Resources near {locationLabel}</h2>
+          <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.9rem' }}>
+            {loading ? 'Searching…' : `${points.length} location${points.length === 1 ? '' : 's'} within ${radiusKm} km`}
+          </p>
+        </div>
 
-        <div className="image-placeholder" style={{ width: '100%', height: '100%', border: 'none', borderRadius: 0, backgroundColor: '#d4cfc5' }}>
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <MapPin size={48} color="var(--mb-text-muted)" style={{ marginBottom: '1rem' }} />
-            <h2 style={{ fontSize: '1.5rem', color: 'var(--mb-text-heading)', marginBottom: '0.5rem' }}>Interactive Map</h2>
-            <p style={{ color: 'var(--mb-text-secondary)', maxWidth: '400px', margin: '0 auto' }}>
-              All clinics are shown on the map. Use your location to pan and filter by distance.
-            </p>
-          </div>
+        <div style={{ padding: '1.5rem 2rem' }}>
+          {error && (
+            <div className="mb-bento-card" style={{ textAlign: 'center', padding: '2.5rem' }}>
+              <AlertCircle size={36} color="var(--mb-text-muted)" style={{ marginBottom: '1rem' }} />
+              <p style={{ color: 'var(--mb-text-muted)', marginBottom: '1.5rem' }}>{error}</p>
+              <button className="mb-btn mb-btn-secondary" onClick={() => runSearch()}>Try again</button>
+            </div>
+          )}
+
+          {!error && !loading && points.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--mb-text-muted)' }}>
+              <MapPin size={48} color="var(--mb-border)" style={{ marginBottom: '1rem' }} />
+              <h3 style={{ marginBottom: '0.5rem' }}>No mapped locations found</h3>
+              <p>Try a larger radius or a different location.</p>
+            </div>
+          )}
+
+          {!error && points.map(({ kind, org, item, id }) => {
+            const distance = formatDistance(item.distance_m);
+            const address = formatAddress(item);
+            const inner = (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {kind === 'pharmacy' ? <Pill size={16} color="var(--mb-accent)" /> : <MapPin size={16} color="var(--mb-accent)" />}
+                    {item.name || org.name}
+                  </h3>
+                  {distance && <span style={{ fontSize: '0.9rem', color: 'var(--mb-text-heading)', whiteSpace: 'nowrap' }}>{distance}</span>}
+                </div>
+                {address && <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.9rem', marginTop: '0.4rem' }}>{address}</p>}
+                <span style={{ display: 'inline-block', marginTop: '0.6rem', fontSize: '0.78rem', color: 'var(--mb-text-muted)' }}>
+                  {kind === 'pharmacy' ? '340B contract pharmacy' : 'Health center'}
+                  {!item.within_radius && ' · just outside radius'}
+                </span>
+              </>
+            );
+
+            return kind === 'site' ? (
+              <Link key={id} to={`/clinic/${encodeURIComponent(org.org_id)}`} className="mb-bento-card" style={{ display: 'block', marginBottom: '1rem', textDecoration: 'none', color: 'inherit' }}>
+                {inner}
+              </Link>
+            ) : (
+              <div key={id} className="mb-bento-card" style={{ marginBottom: '1rem' }}>
+                {inner}
+              </div>
+            );
+          })}
         </div>
       </main>
 
@@ -82,10 +185,8 @@ const MapPage = () => {
         @media (max-width: 768px) {
           .map-wrapper { flex-direction: column !important; height: auto !important; min-height: calc(100vh - 70px); }
           .map-sidebar { width: 100% !important; height: auto !important; border-right: none !important; border-bottom: 1px solid var(--mb-border); }
-          .map-mobile-filters { display: flex !important; }
         }
       `}</style>
-
     </div>
   );
 };
