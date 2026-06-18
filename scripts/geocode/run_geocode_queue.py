@@ -1,8 +1,8 @@
-"""OSM-only geocoding worker driven by public.geocode_queue.
+"""Geocoding worker driven by public.geocode_queue.
 
 Pulls due jobs (status 'queued', or 'failed' past its backoff), geocodes the
-linked location via Nominatim respecting the ~1 req/s usage policy, and writes
-the result back to public.location:
+linked location with the chosen provider, and writes the result back to
+public.location:
 
   - success  -> latitude/longitude + geocode_status='ok' (+ source, geocoded_at)
   - not found -> retried with backoff; after MAX_ATTEMPTS the location is marked
@@ -10,9 +10,14 @@ the result back to public.location:
 
 A coordinate is NEVER used as a flag: failures leave latitude/longitude NULL.
 
+Providers:
+    nominatim (default)  OpenStreetMap, free, ~1 req/s usage policy.
+    google               Google Geocoding API, needs GOOGLE_MAPS_API_KEY in .env.
+
 Usage:
     python -m scripts.geocode.run_geocode_queue [--limit N]
     python -m scripts.geocode.run_geocode_queue --state FL
+    python -m scripts.geocode.run_geocode_queue --state FL --provider google
     python -m scripts.geocode.run_geocode_queue --state FL --resource-type both
     python -m scripts.geocode.run_geocode_queue --state FL --resource-type site --limit 50
 """
@@ -20,17 +25,22 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
 
 import requests
+from dotenv import load_dotenv
 
 from scripts.db import get_client
+from scripts.paths import ROOT
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+GOOGLE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 USER_AGENT = "MedicBridges/2.0 (eduardogoncalvez00@gmail.com)"
 RATE_LIMIT_SECONDS = 1.1
+GOOGLE_RATE_LIMIT_SECONDS = 0.05  # Google allows ~50 req/s; stay polite.
 MAX_ATTEMPTS = 3
 FETCH_BATCH = 100
 ID_CHUNK = 150
@@ -41,7 +51,11 @@ QUEUE_SELECT = "id,attempts,status,location:location_id(id,address_line_1,city,s
 
 
 class RateLimitError(RuntimeError):
-    """Raised when Nominatim keeps returning 429 after extended backoff."""
+    """Raised when a provider keeps rate limiting after extended backoff."""
+
+
+class ConfigError(RuntimeError):
+    """Raised when a provider is missing required configuration (e.g. API key)."""
 
 
 def utc_now() -> datetime:
@@ -62,7 +76,17 @@ def build_address(loc: dict) -> str:
     return ", ".join(str(p).strip() for p in parts if p and str(p).strip())
 
 
-def geocode(address: str) -> tuple[float, float] | None:
+def get_google_api_key() -> str:
+    load_dotenv(ROOT / ".env")
+    key = os.getenv("GOOGLE_MAPS_API_KEY")
+    if not key:
+        raise ConfigError(
+            "GOOGLE_MAPS_API_KEY must be set in .env to use --provider google"
+        )
+    return key
+
+
+def geocode_nominatim(address: str) -> tuple[float, float] | None:
     """Return (lat, lon) from Nominatim, None if not found. Retries on 429."""
     for attempt in range(10):
         response = requests.get(
@@ -83,6 +107,35 @@ def geocode(address: str) -> tuple[float, float] | None:
             return None
         return float(results[0]["lat"]), float(results[0]["lon"])
     raise RateLimitError(f"Nominatim still rate limiting after retries for: {address}")
+
+
+def geocode_google(address: str, api_key: str) -> tuple[float, float] | None:
+    """Return (lat, lon) from the Google Geocoding API, None if not found."""
+    for attempt in range(10):
+        response = requests.get(
+            GOOGLE_URL,
+            params={"address": address, "components": "country:US", "key": api_key},
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        status = payload.get("status")
+        if status == "OK":
+            time.sleep(GOOGLE_RATE_LIMIT_SECONDS)
+            location = payload["results"][0]["geometry"]["location"]
+            return float(location["lat"]), float(location["lng"])
+        if status == "ZERO_RESULTS":
+            time.sleep(GOOGLE_RATE_LIMIT_SECONDS)
+            return None
+        if status == "OVER_QUERY_LIMIT":
+            wait = 60 * (attempt + 1)
+            print(f"  over query limit; waiting {wait}s")
+            time.sleep(wait)
+            continue
+        # REQUEST_DENIED / INVALID_REQUEST / OVER_DAILY_LIMIT, etc. -> not retryable
+        message = payload.get("error_message", "")
+        raise ConfigError(f"Google geocoding error: {status} {message}".strip())
+    raise RateLimitError(f"Google still over query limit after retries for: {address}")
 
 
 def _active_location_ids(client, table: str, state: str | None) -> set[str]:
@@ -175,14 +228,14 @@ def fetch_due_jobs(
     return [j for j in (response.data or []) if j.get("location")]
 
 
-def mark_success(client, job: dict, lat: float, lon: float) -> None:
+def mark_success(client, job: dict, lat: float, lon: float, source: str) -> None:
     loc_id = job["location"]["id"]
     client.table("location").update(
         {
             "latitude": lat,
             "longitude": lon,
             "geocode_status": "ok",
-            "geocode_source": "nominatim",
+            "geocode_source": source,
             "geocoded_at": utc_now().isoformat(),
         }
     ).eq("id", loc_id).execute()
@@ -191,13 +244,13 @@ def mark_success(client, job: dict, lat: float, lon: float) -> None:
     ).eq("id", job["id"]).execute()
 
 
-def mark_failure(client, job: dict, reason: str) -> None:
+def mark_failure(client, job: dict, reason: str, source: str) -> None:
     attempts = job["attempts"] + 1
     loc_id = job["location"]["id"]
     if attempts >= MAX_ATTEMPTS:
         # give up: never store a sentinel coordinate -> leave NULL, flag for review
         client.table("location").update(
-            {"latitude": None, "longitude": None, "geocode_status": "needs_review", "geocode_source": "nominatim"}
+            {"latitude": None, "longitude": None, "geocode_status": "needs_review", "geocode_source": source}
         ).eq("id", loc_id).execute()
         client.table("geocode_queue").update(
             {"status": "failed", "attempts": attempts, "last_attempt_at": utc_now().isoformat(), "error": reason}
@@ -225,12 +278,26 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Only geocode locations linked to active sites and/or contract pharmacies",
     )
+    parser.add_argument(
+        "--provider",
+        choices=("nominatim", "google"),
+        default="nominatim",
+        help="Geocoding backend (google requires GOOGLE_MAPS_API_KEY in .env)",
+    )
     args = parser.parse_args(argv)
 
     state = normalize_state(args.state)
+
+    if args.provider == "google":
+        api_key = get_google_api_key()
+        geocode = lambda address: geocode_google(address, api_key)
+    else:
+        geocode = geocode_nominatim
+
     client = get_client()
     location_ids = resolve_location_ids(client, state=state, resource_type=args.resource_type)
 
+    print(f"Provider: {args.provider}")
     if state or args.resource_type:
         scope = []
         if state:
@@ -261,17 +328,17 @@ def main(argv: list[str] | None = None) -> None:
             processed += 1
             address = build_address(job["location"])
             if not address:
-                mark_failure(client, job, "no address")
+                mark_failure(client, job, "no address", args.provider)
                 failed += 1
                 print(f"[{processed}] no address -> needs_review/backoff")
                 continue
             coords = geocode(address)
             if coords is None:
-                mark_failure(client, job, "not found")
+                mark_failure(client, job, "not found", args.provider)
                 failed += 1
                 print(f"[{processed}] not found: {address}")
             else:
-                mark_success(client, job, *coords)
+                mark_success(client, job, *coords, args.provider)
                 succeeded += 1
                 print(f"[{processed}] ok: {address} -> {coords[0]:.5f},{coords[1]:.5f}")
 
@@ -287,6 +354,9 @@ if __name__ == "__main__":
     except RateLimitError as exc:
         print(f"\n{exc}", file=sys.stderr)
         sys.exit(1)
+    except ConfigError as exc:
+        print(f"\n{exc}", file=sys.stderr)
+        sys.exit(2)
     except ValueError as exc:
         print(f"\n{exc}", file=sys.stderr)
         sys.exit(2)
