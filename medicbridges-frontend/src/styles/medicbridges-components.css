@@ -1,44 +1,43 @@
-/* medicbridges-components.css */
+/* medicbridges-components.css — NearWell brand kit */
 
 /* Button Utility */
 .mb-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   padding: 0.75rem 1.75rem;
-  font-weight: 400;
+  font-weight: 600;
   border-radius: var(--mb-radius-btn);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: 'Mulish', sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   font-size: 1rem;
+  line-height: 1;
+  text-decoration: none;
 }
 
-/* Primary Button — Dark forest green */
+/* Primary Button — Deepwell teal */
 .mb-btn-primary {
-  background-color: var(--mb-accent);
-  color: #f5f0e8;
-  box-shadow: var(--mb-shadow-sm);
+  background-color: var(--mb-primary);
+  color: #ffffff;
 }
 
 .mb-btn-primary:hover {
-  background-color: var(--mb-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--mb-shadow-md);
+  background-color: var(--mb-primary-hover);
+  color: #ffffff;
 }
 
-/* Secondary / Highlight Button — Lime Green */
+/* Secondary / Highlight Button — Honey accent */
 .mb-btn-secondary {
-  background-color: var(--mb-lime);
-  color: var(--mb-accent);
-  box-shadow: var(--mb-shadow-sm);
-  font-weight: 400;
+  background-color: var(--mb-honey);
+  color: var(--mb-honey-ink);
 }
 
 .mb-btn-secondary:hover {
-  background-color: var(--mb-lime-hover);
-  transform: translateY(-1px);
+  background-color: var(--mb-honey-hover);
+  color: var(--mb-honey-ink);
 }
 
 /* Outline Button */
@@ -49,17 +48,19 @@
 }
 
 .mb-btn-outline:hover {
+  border-color: var(--mb-primary);
+  color: var(--mb-primary);
   background-color: var(--mb-bg-surface-hover);
 }
 
 /* Card Utility */
 .mb-card, .mb-bento-card {
   background-color: var(--mb-bg-surface);
-  border-radius: var(--mb-radius-lg);
+  border-radius: var(--mb-radius-xl);
   box-shadow: var(--mb-shadow-sm);
   padding: 2rem;
   border: 1px solid var(--mb-border);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .mb-bento-card:hover {
@@ -72,7 +73,7 @@
 }
 
 .mb-bento-card:hover .mb-clinic-card-title {
-  text-decoration: underline;
+  color: var(--mb-primary);
 }
 
 /* Form Inputs */
@@ -83,29 +84,29 @@
 }
 
 .mb-label {
-  font-weight: 400;
+  font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--mb-text-primary);
   font-size: 0.95rem;
-  font-family: 'Mulish', sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 .mb-input, .mb-select, .mb-textarea {
-  padding: 0.75rem 1rem;
-  border-radius: var(--mb-radius-sm);
+  padding: 0.85rem 1rem;
+  border-radius: var(--mb-radius);
   border: 1px solid var(--mb-border);
-  background-color: var(--mb-bg-primary);
-  font-family: 'Mulish', sans-serif;
+  background-color: var(--mb-bg-surface);
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   font-size: 1rem;
   color: var(--mb-text-primary);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
 }
 
 .mb-input:focus, .mb-select:focus, .mb-textarea:focus {
   outline: none;
-  border-color: var(--mb-accent);
-  box-shadow: 0 0 0 3px rgba(45, 59, 45, 0.1);
+  border-color: var(--mb-primary);
+  box-shadow: 0 0 0 3px rgba(15, 110, 86, 0.12);
 }
 
 /* Checkbox/Radio */
@@ -117,29 +118,52 @@
   color: var(--mb-text-primary);
   cursor: pointer;
   margin-bottom: 0.5rem;
-  font-family: 'Mulish', sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+}
+
+.mb-input[type="checkbox"], .mb-checkbox-label input[type="checkbox"] {
+  accent-color: var(--mb-primary);
+}
+
+/* Search map markers */
+.search-map-marker {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--mb-primary);
+  box-shadow: 0 2px 8px rgba(15, 110, 86, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.search-map-marker:hover,
+.search-map-marker--selected {
+  transform: scale(1.25);
+  background: var(--mb-honey);
 }
 
 /* Image Placeholder */
 .image-placeholder {
-  background-color: var(--mb-bg-primary);
-  border: 2px dashed var(--mb-border);
-  border-radius: var(--mb-radius-lg);
+  background-image: repeating-linear-gradient(135deg, #EDE6D8 0, #EDE6D8 13px, #E6DECF 13px, #E6DECF 26px);
+  border: 1px solid var(--mb-border);
+  border-radius: var(--mb-radius-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--mb-text-muted);
+  color: #8A7F66;
   font-size: 0.875rem;
-  font-weight: 400;
+  font-weight: 500;
   min-height: 200px;
 }
 
 /* Glassmorphism Panel */
 .mb-glass-panel {
-  background: rgba(245, 240, 232, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(245, 240, 232, 0.3);
+  background: rgba(251, 247, 240, 0.86);
+  backdrop-filter: saturate(1.3) blur(10px);
+  -webkit-backdrop-filter: saturate(1.3) blur(10px);
+  border: 1px solid var(--mb-border-soft);
   border-radius: var(--mb-radius);
 }
 

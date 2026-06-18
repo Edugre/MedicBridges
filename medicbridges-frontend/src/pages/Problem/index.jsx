@@ -9,7 +9,7 @@ const Problem = () => {
       {/* Hero Section */}
       <section className="problem-hero" style={{ padding: '6rem 2rem', textAlign: 'center', backgroundColor: 'var(--mb-bg-primary)' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-accent)', color: '#f5f0e8', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-primary)', color: '#fff', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1.5rem' }}>
             The Problem We're Solving
           </div>
           <h1 className="problem-heading" style={{ fontSize: '3.5rem', marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
@@ -91,9 +91,9 @@ const Problem = () => {
       </section>
 
       {/* Field Research Quotes */}
-      <section style={{ padding: '6rem 2rem', backgroundColor: '#2d3b2d', color: '#f5f0e8' }}>
+      <section style={{ padding: '6rem 2rem', backgroundColor: 'var(--mb-primary)', color: '#fff' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '3rem', textAlign: 'center', color: '#f5f0e8' }}>Voices from the Field</h2>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '3rem', textAlign: 'center', color: '#fff' }}>Voices from the Field</h2>
           
           <div className="quotes-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
             <div style={{ padding: '2rem', backgroundColor: 'rgba(245, 240, 232, 0.05)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(245,240,232,0.1)' }}>

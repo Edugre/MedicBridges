@@ -1,39 +1,54 @@
-/* medicbridges-theme.css */
+/* medicbridges-theme.css — NearWell brand kit */
 :root {
-  /* MedicBridges Forest Green + Lime Palette */
-  --mb-primary: #2d3b2d; /* Dark forest green — navbar, text, footer */
-  --mb-primary-hover: #1a2e1a;
-  --mb-accent: #2d3b2d; /* Dark charcoal-green for primary buttons and text */
-  --mb-accent-hover: #1a2e1a;
+  /* ---- Brand greens ---- */
+  --mb-primary: #0F6E56; /* Deepwell teal — primary / CTA / brand */
+  --mb-primary-hover: #0A5642;
+  --mb-secondary: #1D9E75; /* Living teal — decorative accents */
+  --mb-accent: #0F6E56; /* Alias kept for backwards-compat (buttons + text) */
+  --mb-accent-hover: #0A5642;
 
-  /* Lime Green Highlight */
-  --mb-lime: #c5e847; /* Lime green for highlight buttons */
-  --mb-lime-hover: #b8db3a;
-  --mb-lime-soft: rgba(197, 232, 71, 0.15); /* Subtle lime tint for badges/pills */
+  /* ---- Honey accent ---- */
+  --mb-honey: #EF9F27; /* Accent / step 3 / secondary CTA */
+  --mb-honey-hover: #e0931d;
+  --mb-honey-ink: #3a2403; /* Text on honey */
+  --mb-honey-soft: #FAEEDA; /* Info box tint */
+  --mb-honey-soft-ink: #633806;
 
-  /* Backgrounds — Cream palette */
-  --mb-bg-primary: #f5f0e8; /* Warm cream — main page background */
-  --mb-bg-surface: #ede8df; /* Slightly deeper cream — cards, panels */
-  --mb-bg-surface-hover: #e5dfd5; /* Hover state for surfaces */
+  /* Legacy "lime" aliases now resolve to the honey accent so older
+     components stay on-brand without a rewrite. */
+  --mb-lime: #EF9F27;
+  --mb-lime-hover: #e0931d;
+  --mb-lime-soft: #E1F5EE; /* Sage tint — badges, icon chips */
 
-  /* Text Colors */
-  --mb-text-primary: #2d3b2d; /* Dark forest green */
-  --mb-text-secondary: #5a6b5a; /* Muted forest green */
-  --mb-text-muted: #8a9a8a; /* Soft sage */
-  --mb-text-heading: #1a2e1a; /* Deep green headings */
+  /* ---- Backgrounds ---- */
+  --mb-bg-primary: #FBF7F0; /* Linen — main page background */
+  --mb-bg-surface: #FFFFFF; /* White — cards, panels */
+  --mb-bg-surface-hover: #F4F1EA;
+  --mb-bg-sage: #E1F5EE; /* Sage — alt section background */
 
-  /* Borders & Shadows */
-  --mb-border: #d4cfc5; /* Warm cream border */
-  --mb-shadow-sm: 0 1px 2px 0 rgba(45, 59, 45, 0.06);
-  --mb-shadow-md: 0 4px 6px -1px rgba(45, 59, 45, 0.08), 0 2px 4px -1px rgba(45, 59, 45, 0.04);
-  --mb-shadow-lg: 0 10px 15px -3px rgba(45, 59, 45, 0.08), 0 4px 6px -2px rgba(45, 59, 45, 0.04);
+  /* ---- Text ---- */
+  --mb-text-primary: #25302E; /* Slate ink */
+  --mb-text-secondary: #5A655F;
+  --mb-text-muted: #8A938D;
+  --mb-text-heading: #25302E;
+  --mb-text-disabled: #A6A7A0;
 
-  /* Radius (Soft rounded rectangles — editorial style) */
-  --mb-radius-sm: 8px;
-  --mb-radius: 12px;
-  --mb-radius-lg: 16px;
-  --mb-radius-btn: 12px;
-  --mb-radius-pill: 9999px; /* kept for badges only */
+  /* ---- Borders ---- */
+  --mb-border: #E6E1D6;
+  --mb-border-soft: #ECE5D8;
+
+  /* ---- Shadows ---- */
+  --mb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --mb-shadow-md: 0 4px 20px rgba(20, 40, 38, 0.05);
+  --mb-shadow-lg: 0 18px 44px rgba(15, 110, 86, 0.1);
+
+  /* ---- Radii ---- */
+  --mb-radius-sm: 11px; /* buttons (compact) */
+  --mb-radius: 13px; /* inputs / cards / CTA buttons */
+  --mb-radius-lg: 16px; /* accordions, medium cards */
+  --mb-radius-xl: 22px; /* large cards */
+  --mb-radius-2xl: 24px; /* section blocks */
+  --mb-radius-3xl: 28px; /* CTA block */
+  --mb-radius-btn: 13px;
+  --mb-radius-pill: 999px;
 }
-
-/* Dark Mode disabled for now — cream palette is light-only */

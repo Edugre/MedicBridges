@@ -60,11 +60,11 @@ const Historias = () => {
         </div>
       </section>
 
-      {/* Dark green card grid — Mentara-style */}
-      <section style={{ padding: '4rem 2rem', backgroundColor: '#2d3b2d' }}>
+      {/* Deepwell teal card grid */}
+      <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--mb-primary)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h2 style={{ fontSize: '2.25rem', color: '#f5f0e8' }}>
+            <h2 style={{ fontSize: '2.25rem', color: '#fff' }}>
               <em>Strong communities, thriving lives.</em>
             </h2>
           </div>
@@ -72,9 +72,9 @@ const Historias = () => {
           <div className="historias-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
             {stories.map((story, i) => (
               <div key={i} style={{
-                backgroundColor: 'rgba(245, 240, 232, 0.06)',
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
                 borderRadius: 'var(--mb-radius-lg)',
-                border: '1px solid rgba(245,240,232,0.1)',
+                border: '1px solid rgba(255,255,255,0.12)',
                 overflow: 'hidden',
                 transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 cursor: 'pointer',
@@ -98,9 +98,9 @@ const Historias = () => {
 
                 {/* Content */}
                 <div style={{ padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', marginBottom: '0.25rem', color: '#f5f0e8' }}>{story.title}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'rgba(245,240,232,0.5)', marginBottom: '1rem' }}>{story.subtitle}</p>
-                  <p style={{ fontSize: '0.95rem', color: 'rgba(245,240,232,0.75)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '1.25rem' }}>
+                  <h3 style={{ fontSize: '1.15rem', marginBottom: '0.25rem', color: '#fff' }}>{story.title}</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', marginBottom: '1rem' }}>{story.subtitle}</p>
+                  <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.78)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '1.25rem' }}>
                     "{story.quote}"
                   </p>
                   <div style={{
@@ -108,8 +108,8 @@ const Historias = () => {
                     alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.4rem 1rem',
-                    backgroundColor: 'var(--mb-lime)',
-                    color: '#2d3b2d',
+                    backgroundColor: 'var(--mb-honey)',
+                    color: 'var(--mb-honey-ink)',
                     borderRadius: 'var(--mb-radius-btn)',
                     fontSize: '0.85rem',
                     cursor: 'pointer',
@@ -123,24 +123,24 @@ const Historias = () => {
         </div>
       </section>
 
-      {/* Values bar — dark green with icons */}
-      <section style={{ padding: '4rem 2rem', backgroundColor: '#243524' }}>
+      {/* Values bar — deeper teal with icons */}
+      <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--mb-primary-hover)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div className="values-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
-            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(245,240,232,0.05)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(245,240,232,0.08)' }}>
-              <div style={{ marginBottom: '1rem' }}><Lock size={28} color="var(--mb-lime)" /></div>
-              <h3 style={{ color: '#f5f0e8', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Confidentiality</h3>
-              <p style={{ color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem' }}>Your privacy matters; we keep your information safe.</p>
+            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ marginBottom: '1rem' }}><Lock size={28} color="var(--mb-honey)" /></div>
+              <h3 style={{ color: '#fff', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Confidentiality</h3>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>Your privacy matters; we keep your information safe.</p>
             </div>
-            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(245,240,232,0.05)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(245,240,232,0.08)' }}>
-              <div style={{ marginBottom: '1rem' }}><Handshake size={28} color="var(--mb-lime)" /></div>
-              <h3 style={{ color: '#f5f0e8', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Inclusivity</h3>
-              <p style={{ color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem' }}>Programs that engage various communities in every language.</p>
+            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ marginBottom: '1rem' }}><Handshake size={28} color="var(--mb-honey)" /></div>
+              <h3 style={{ color: '#fff', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Inclusivity</h3>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>Programs that engage various communities in every language.</p>
             </div>
-            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(245,240,232,0.05)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(245,240,232,0.08)' }}>
-              <div style={{ marginBottom: '1rem' }}><DollarSign size={28} color="var(--mb-lime)" /></div>
-              <h3 style={{ color: '#f5f0e8', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Affordability</h3>
-              <p style={{ color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem' }}>Sliding scale options to ensure services are budget-friendly.</p>
+            <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ marginBottom: '1rem' }}><DollarSign size={28} color="var(--mb-honey)" /></div>
+              <h3 style={{ color: '#fff', fontSize: '1.15rem', marginBottom: '0.5rem' }}>Affordability</h3>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.9rem' }}>Sliding scale options to ensure services are budget-friendly.</p>
             </div>
           </div>
         </div>

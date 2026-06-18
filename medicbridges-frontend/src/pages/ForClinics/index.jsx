@@ -134,7 +134,7 @@ const ForClinics = () => {
 
             {/* Featured Plan */}
             <div className="mb-bento-card" style={{ display: 'flex', flexDirection: 'column', border: '2px solid var(--mb-accent)', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--mb-lime)', color: 'var(--mb-accent)', padding: '0.25rem 1rem', borderRadius: 'var(--mb-radius-pill)', fontSize: '0.875rem', whiteSpace: 'nowrap' }}>Most Popular for FQHCs</div>
+              <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--mb-honey)', color: 'var(--mb-honey-ink)', padding: '0.25rem 1rem', borderRadius: 'var(--mb-radius-pill)', fontSize: '0.875rem', whiteSpace: 'nowrap' }}>Most Popular for FQHCs</div>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Featured</h3>
               <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>$99<span style={{ fontSize: '1.25rem', color: 'var(--mb-text-secondary)' }}>/mo</span></div>
               <p style={{ color: 'var(--mb-text-secondary)', marginBottom: '2rem' }}>Everything in Basic, plus:</p>
