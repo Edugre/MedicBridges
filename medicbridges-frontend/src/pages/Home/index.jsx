@@ -1,256 +1,321 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Search, MapPin, Shield, Heart, Users, Stethoscope, Check, Lock, Handshake, DollarSign, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, Check, UserX, ShieldCheck, EyeOff } from 'lucide-react';
+import heroImage from '../../assets/hero-clinic.png';
+import { useSearchModal } from '../../context/SearchModalContext';
+
+const label = {
+  fontSize: '13px',
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  fontWeight: 600,
+  color: 'var(--mb-primary)',
+};
+
+const STEPS = [
+  {
+    n: '01',
+    color: 'var(--mb-primary)',
+    title: 'Tell us a little about you',
+    body: "Your ZIP, household size, and the care you need. An estimate of your income is all it takes — no proof required.",
+  },
+  {
+    n: '02',
+    color: 'var(--mb-primary)',
+    title: 'See your matches instantly',
+    body: 'We rank nearby clinics and pharmacies by what you likely qualify for, with clear costs and hours on every result.',
+  },
+  {
+    n: '03',
+    color: 'var(--mb-honey)',
+    title: 'Get care for less',
+    body: "Call, get directions, and ask for the sliding-scale program at check-in. We'll show you exactly what to say.",
+  },
+];
+
+const ELIGIBILITY = [
+  {
+    title: 'No proof of income needed to start',
+    body: 'Begin care first; most clinics sort out paperwork later.',
+  },
+  {
+    title: 'No insurance required',
+    body: 'Uninsured patients are welcome at every clinic we list.',
+  },
+  {
+    title: 'Everyone is served',
+    body: 'Community health centers care for you regardless of immigration status.',
+  },
+];
+
+const PRIVACY = [
+  {
+    icon: <UserX size={22} color="var(--mb-primary)" strokeWidth={2} />,
+    title: 'No account, no login',
+    body: 'Use the whole tool without signing up or giving us your name.',
+  },
+  {
+    icon: <ShieldCheck size={22} color="var(--mb-primary)" strokeWidth={2} />,
+    title: 'We never sell your data',
+    body: 'No ads, no data brokers. Your income is used only to match programs.',
+  },
+  {
+    icon: <EyeOff size={22} color="var(--mb-primary)" strokeWidth={2} />,
+    title: 'Nothing is shared',
+    body: "Your answers aren't sent to clinics or anyone else without your say-so.",
+  },
+];
+
+const FAQS = [
+  {
+    q: 'Is this really free?',
+    a: "Yes. MedicBridges is completely free to use. We don't run ads and we don't sell your information — this is a public-good tool, not a business that profits from your visit.",
+  },
+  {
+    q: 'Do I need insurance?',
+    a: 'No. Many of the clinics and pharmacies we list serve people with no insurance at all, and charge based on what you can afford.',
+  },
+  {
+    q: 'Will I have to prove my income?',
+    a: 'Not to begin. Most clinics let you start care and complete any sliding-scale paperwork afterward. We only ask for an estimate so we can show what you likely qualify for.',
+  },
+  {
+    q: "What if I'm undocumented?",
+    a: 'Community health centers care for everyone, regardless of immigration status. MedicBridges never asks about it, and your answers are never shared.',
+  },
+];
 
 const Home = () => {
+  const [openIndex, setOpenIndex] = useState(0);
+  const { openModal } = useSearchModal();
+  const toggle = (i) => setOpenIndex((cur) => (cur === i ? -1 : i));
+
   return (
-    <div style={{ animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="landing-fade-in">
 
-      {/* Hero Section */}
-      <section className="hero-section" style={{ padding: '8rem 2rem 6rem', textAlign: 'center', backgroundColor: 'var(--mb-bg-primary)', position: 'relative', overflow: 'hidden' }}>
-        {/* Subtle background accent */}
-        <div style={{ position: 'absolute', top: '-200px', right: '-200px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,59,45,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-150px', left: '-150px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(197,232,71,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        
-        <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            Free for Patients — Always
+      {/* ============ HERO ============ */}
+      <section id="hero" style={{ maxWidth: '880px', margin: '0 auto', padding: '104px 32px 72px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '26px', ...label }}>
+          Care that's within reach
+        </div>
+        <h1 className="hero-h1" style={{ fontSize: '62px', fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.03em', margin: '0 0 24px', textWrap: 'balance' }}>
+          Find low-cost care and affordable medicine, close to home.
+        </h1>
+        <p style={{ fontSize: '20px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: '0 auto 36px', maxWidth: '600px', textWrap: 'pretty' }}>
+          Answer a few simple questions and we'll match you to clinics and pharmacies you may qualify for. Most people finish in about two minutes.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
+          <button
+            type="button"
+            onClick={openModal}
+            className="mb-btn mb-btn-primary"
+            style={{ height: '58px', padding: '0 34px', borderRadius: '13px', fontSize: '17.5px' }}
+          >
+            Find care near me <span style={{ fontSize: '19px' }}>→</span>
+          </button>
+          <div style={{ fontSize: '14.5px', color: 'var(--mb-text-muted)', letterSpacing: '0.01em' }}>
+            Free &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; No login required
           </div>
-          
-          <h1 className="hero-heading" style={{ fontSize: '4rem', marginBottom: '1.5rem', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-            Find free healthcare<br />
-            <span style={{ fontStyle: 'italic', color: 'var(--mb-text-secondary)' }}>in Miami.</span>
-          </h1>
-          
-          <p style={{ fontSize: '1.15rem', color: 'var(--mb-text-secondary)', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto 3rem' }}>
-            MedicBridges connects uninsured and Medicaid patients to free clinics, pharmacies, therapists, and specialists — in your language, near you.
+        </div>
+      </section>
+
+      {/* ============ IMAGE BAND ============ */}
+      <section style={{ maxWidth: '1160px', margin: '0 auto 8px', padding: '0 32px' }}>
+        <div style={{ height: '430px', borderRadius: '24px', overflow: 'hidden', border: '1px solid var(--mb-border)' }}>
+          <img
+            src={heroImage}
+            alt="A community health worker talking with a patient at a community health center"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }}
+          />
+        </div>
+      </section>
+
+      {/* ============ HOW IT WORKS ============ */}
+      <section id="how" style={{ maxWidth: '1160px', margin: '0 auto', padding: '104px 32px 96px' }}>
+        <div style={{ maxWidth: '620px', margin: '0 0 64px' }}>
+          <div style={{ ...label, marginBottom: '16px' }}>How it works</div>
+          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: 0, textWrap: 'balance' }}>
+            Three simple steps to care you can afford.
+          </h2>
+        </div>
+        <div className="how-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '48px' }}>
+          {STEPS.map((step) => (
+            <div key={step.n} style={{ borderTop: `2px solid ${step.color}`, paddingTop: '24px' }}>
+              <div style={{ fontSize: '46px', fontWeight: 600, color: step.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '18px' }}>
+                {step.n}
+              </div>
+              <h3 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em', margin: '0 0 11px' }}>{step.title}</h3>
+              <p style={{ fontSize: '16px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0 }}>{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ============ COST & ELIGIBILITY ============ */}
+      <section id="cost" style={{ background: 'var(--mb-bg-sage)' }}>
+        <div className="cost-grid" style={{ maxWidth: '1160px', margin: '0 auto', padding: '96px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '72px', alignItems: 'center' }}>
+          <div>
+            <div style={{ ...label, marginBottom: '16px' }}>Cost &amp; eligibility</div>
+            <h2 style={{ fontSize: '40px', fontWeight: 600, letterSpacing: '-0.025em', margin: '0 0 20px', lineHeight: 1.1, textWrap: 'balance' }}>
+              You probably qualify — and you won't pay full price.
+            </h2>
+            <p style={{ fontSize: '18px', lineHeight: 1.62, color: '#41504A', margin: '0 0 32px', maxWidth: '480px' }}>
+              Sliding-scale clinics set your fee based on what you earn and how many people you support. Many visits cost very little, and some are free.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {ELIGIBILITY.map((item) => (
+                <div key={item.title} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                  <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--mb-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                    <Check size={14} />
+                  </span>
+                  <div>
+                    <div style={{ fontSize: '16.5px', fontWeight: 600 }}>{item.title}</div>
+                    <div style={{ fontSize: '15px', color: 'var(--mb-text-secondary)', lineHeight: 1.5, marginTop: '2px' }}>{item.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Estimate card */}
+          <div style={{ background: 'var(--mb-bg-surface)', border: '1px solid var(--mb-border)', borderRadius: '22px', padding: '32px', boxShadow: 'var(--mb-shadow-lg)' }}>
+            <div style={{ fontSize: '13px', color: 'var(--mb-text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
+              Estimate · household of 3
+            </div>
+            <div style={{ fontSize: '15px', color: 'var(--mb-text-secondary)', marginBottom: '26px' }}>A primary-care visit on a sliding scale</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ height: '112px', background: '#F4F1EA', border: '1px solid var(--mb-border-soft)', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '32px', fontWeight: 600, color: 'var(--mb-text-disabled)', textDecoration: 'line-through' }}>$180</span>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-text-muted)', marginTop: '11px' }}>Full price</div>
+              </div>
+              <div style={{ fontSize: '22px', color: '#C9C2B2', paddingBottom: '42px' }}>→</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ height: '112px', background: 'var(--mb-bg-sage)', border: '1.5px solid var(--mb-primary)', borderRadius: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '32px', fontWeight: 600, color: 'var(--mb-primary)', letterSpacing: '-0.02em' }}>$25</span>
+                  <span style={{ fontSize: '11px', color: 'var(--mb-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>Lowest tier</span>
+                </div>
+                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-primary)', fontWeight: 600, marginTop: '11px' }}>What you'd likely pay</div>
+              </div>
+            </div>
+            <div style={{ background: 'var(--mb-honey-soft)', borderRadius: '13px', padding: '14px 16px', marginTop: '22px', fontSize: '13.5px', lineHeight: 1.55, color: 'var(--mb-honey-soft-ink)' }}>
+              Your actual fee depends on income and household size. We'll show your likely tier before you ever call.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ PRIVACY ============ */}
+      <section id="privacy" style={{ maxWidth: '1160px', margin: '0 auto', padding: '104px 32px 96px' }}>
+        <div style={{ maxWidth: '620px', margin: '0 0 60px' }}>
+          <div style={{ ...label, marginBottom: '16px' }}>Private by design</div>
+          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: '0 0 14px', textWrap: 'balance' }}>
+            Your information stays yours.
+          </h2>
+          <p style={{ fontSize: '18px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>
+            Look for help without worrying about who's watching.
           </p>
-
-          <div className="hero-buttons" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2rem' }}>
-            <Link to="/search" className="mb-btn mb-btn-secondary" style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
-              Find Care Now <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} />
-            </Link>
-            <Link to="/for-clinics" className="mb-btn mb-btn-outline" style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
-              I'm a Clinic
-            </Link>
-          </div>
-
-          <div className="hero-trust" style={{ display: 'flex', justifyContent: 'center', gap: '2rem', color: 'var(--mb-text-muted)', fontSize: '0.9rem', flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Check size={14} color="var(--mb-accent)" /> No login required</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Check size={14} color="var(--mb-accent)" /> 100% free</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Check size={14} color="var(--mb-accent)" /> Miami-Dade focused</span>
-          </div>
+        </div>
+        <div className="privacy-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '44px' }}>
+          {PRIVACY.map((item) => (
+            <div key={item.title} style={{ borderTop: '1px solid var(--mb-border-soft)', paddingTop: '26px' }}>
+              <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: 'var(--mb-bg-sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                {item.icon}
+              </div>
+              <h3 style={{ fontSize: '19px', fontWeight: 600, margin: '0 0 9px' }}>{item.title}</h3>
+              <p style={{ fontSize: '15.5px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>{item.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Hero Image Placeholder */}
-      <section style={{ padding: '0 2rem' }}>
-        <div style={{ maxWidth: '1200px', margin: '-3rem auto 0' }}>
-          <div className="image-placeholder" style={{ minHeight: '400px', borderRadius: 'var(--mb-radius-lg)', boxShadow: 'var(--mb-shadow-lg)' }}>
-            [Platform Screenshot / Hero Image]
-          </div>
+      {/* ============ FAQ ============ */}
+      <section id="faq" style={{ maxWidth: '820px', margin: '0 auto', padding: '0 32px 96px' }}>
+        <div style={{ margin: '0 0 40px' }}>
+          <div style={{ ...label, marginBottom: '16px' }}>Real questions, real answers</div>
+          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>The things people actually ask.</h2>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {FAQS.map((item, i) => {
+            const open = openIndex === i;
+            return (
+              <div key={item.q} style={{ background: 'var(--mb-bg-surface)', border: '1px solid var(--mb-border)', borderRadius: '16px', overflow: 'hidden' }}>
+                <button
+                  onClick={() => toggle(i)}
+                  aria-expanded={open}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    width: '100%',
+                    padding: '22px 24px',
+                    cursor: 'pointer',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    color: 'var(--mb-text-primary)',
+                  }}
+                >
+                  <span style={{ fontSize: '18px', fontWeight: 600 }}>{item.q}</span>
+                  <ChevronDown
+                    size={22}
+                    color="var(--mb-primary)"
+                    style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                  />
+                </button>
+                {open && (
+                  <p style={{ fontSize: '16px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0, padding: '0 24px 24px' }}>
+                    {item.a}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section style={{ padding: '4rem 2rem' }}>
-        <div className="stats-grid" style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2rem', textAlign: 'center' }}>
-          <div>
-            <div style={{ fontSize: '2.5rem', color: 'var(--mb-accent)' }}>50+</div>
-            <div style={{ color: 'var(--mb-text-secondary)' }}>Clinics Listed</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '2.5rem', color: 'var(--mb-accent)' }}>100%</div>
-            <div style={{ color: 'var(--mb-text-secondary)' }}>Free for Patients</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '2.5rem', color: 'var(--mb-accent)' }}>4+</div>
-            <div style={{ color: 'var(--mb-text-secondary)' }}>Languages Supported</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '2.5rem', color: 'var(--mb-accent)' }}>24h</div>
-            <div style={{ color: 'var(--mb-text-secondary)' }}>Clinic Setup Time</div>
-          </div>
-        </div>
-      </section>
-
-      {/* What You Can Find Section */}
-      <section style={{ padding: '6rem 2rem', backgroundColor: 'var(--mb-bg-surface)', borderTop: '1px solid var(--mb-border)', borderBottom: '1px solid var(--mb-border)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>What you can find</h2>
-            <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
-              All the care you need, aggregated into one place — filtered by your insurance, language, and location.
+      {/* ============ CTA ============ */}
+      <section style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 32px 96px' }}>
+        <div
+          className="cta-block"
+          style={{ background: 'var(--mb-primary)', borderRadius: '28px', padding: '60px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '48px', alignItems: 'center', position: 'relative', overflow: 'hidden' }}
+        >
+          <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '180px', height: '180px', borderRadius: '50%', background: 'var(--mb-secondary)', opacity: 0.35 }} />
+          <div style={{ position: 'relative' }}>
+            <h2 style={{ fontSize: '36px', fontWeight: 600, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 14px', lineHeight: 1.12, textWrap: 'balance' }}>
+              Ready when you are. It takes about two minutes.
+            </h2>
+            <p style={{ fontSize: '17px', lineHeight: 1.55, color: '#C2E4D9', margin: 0 }}>
+              No login, no insurance, no pressure. Find the care and medicine you can afford.
             </p>
           </div>
-
-
-          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
-            <div className="mb-bento-card" style={{ textAlign: 'center' }}>
-              <Stethoscope size={36} color="var(--mb-accent)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Primary Care</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>FQHCs and community health centers that serve the uninsured.</p>
-            </div>
-            <div className="mb-bento-card" style={{ textAlign: 'center' }}>
-              <Heart size={36} color="var(--mb-accent)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Mental Health</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Free therapy, counseling, and substance abuse programs.</p>
-            </div>
-            <div className="mb-bento-card" style={{ textAlign: 'center' }}>
-              <Shield size={36} color="var(--mb-accent)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Pharmacy & Meds</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Clinics with on-site meds through the 340B program — often at $0.</p>
-            </div>
-            <div className="mb-bento-card" style={{ textAlign: 'center' }}>
-              <Users size={36} color="var(--mb-accent)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Women's & Children's</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>OB-GYN, prenatal care, pediatrics, and reproductive health services.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section — Mentara-style dark green split layout */}
-      <section style={{ backgroundColor: '#2d3b2d', padding: '0' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <div className="about-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '500px' }}>
-            {/* Image side */}
-            <div style={{ overflow: 'hidden' }}>
-              <img 
-                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop"
-                alt="Healthcare consultation"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: '400px' }}
-                onError={(e) => { e.target.parentElement.style.backgroundColor = 'rgba(245,240,232,0.05)'; e.target.style.display = 'none'; }}
-              />
-            </div>
-            {/* Text side */}
-            <div style={{ padding: '4rem 3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <Sparkles size={18} color="var(--mb-lime)" />
-                <span style={{ color: 'rgba(245,240,232,0.6)', fontSize: '0.9rem' }}>About MedicBridges</span>
-              </div>
-              <h2 style={{ fontSize: '2.5rem', color: '#f5f0e8', marginBottom: '1.5rem', lineHeight: 1.15 }}>
-                <em>Bridging the gap to care, one patient at a time.</em>
-              </h2>
-              <p style={{ color: 'rgba(245,240,232,0.7)', lineHeight: 1.7, marginBottom: '2rem', fontSize: '1.05rem' }}>
-                MedicBridges aggregates every free and low-cost healthcare resource in Miami-Dade into one searchable platform. We match patients to the right provider based on language, location, insurance status, and the type of care they need.
-              </p>
-              <div>
-                <Link to="/problem" className="mb-btn" style={{ backgroundColor: 'var(--mb-lime)', color: '#2d3b2d', padding: '0.75rem 1.5rem' }}>
-                  Know Us More <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
-                </Link>
-              </div>
-
-              {/* Values row */}
-              <div className="values-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(245,240,232,0.1)' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ marginBottom: '0.5rem' }}><Lock size={24} color="var(--mb-lime)" /></div>
-                  <h4 style={{ color: '#f5f0e8', fontSize: '0.95rem', marginBottom: '0.25rem' }}>Confidentiality</h4>
-                  <p style={{ color: 'rgba(245,240,232,0.5)', fontSize: '0.8rem' }}>Your privacy matters; we keep your information safe.</p>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ marginBottom: '0.5rem' }}><Handshake size={24} color="var(--mb-lime)" /></div>
-                  <h4 style={{ color: '#f5f0e8', fontSize: '0.95rem', marginBottom: '0.25rem' }}>Inclusivity</h4>
-                  <p style={{ color: 'rgba(245,240,232,0.5)', fontSize: '0.8rem' }}>Programs that engage various communities.</p>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ marginBottom: '0.5rem' }}><DollarSign size={24} color="var(--mb-lime)" /></div>
-                  <h4 style={{ color: '#f5f0e8', fontSize: '0.95rem', marginBottom: '0.25rem' }}>Affordability</h4>
-                  <p style={{ color: 'rgba(245,240,232,0.5)', fontSize: '0.8rem' }}>Sliding scale options to ensure budget-friendly care.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section style={{ padding: '6rem 2rem' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>How it works</h2>
-            <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)' }}>Find the right care in three simple steps.</p>
-          </div>
-
-          <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--mb-lime-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.5rem', color: 'var(--mb-accent)' }}>1</div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Search</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Enter your ZIP code, insurance status, and what kind of care you need.</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--mb-lime-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.5rem', color: 'var(--mb-accent)' }}>2</div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Get Matched</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>We show you clinics that match your criteria — filtered by language, distance, and services.</p>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--mb-lime-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '1.5rem', color: 'var(--mb-accent)' }}>3</div>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Connect</h3>
-              <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.95rem' }}>Call, visit, or follow the clinic directly. No middleman, no cost.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Problem Teaser */}
-      <section style={{ padding: '6rem 2rem', backgroundColor: '#2d3b2d', color: '#f5f0e8', textAlign: 'center' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem', color: '#f5f0e8' }}>
-            1 in 4 Miami residents lack adequate health coverage.
-          </h2>
-          <p style={{ fontSize: '1.1rem', marginBottom: '2.5rem', color: 'rgba(245,240,232,0.7)', lineHeight: 1.6 }}>
-            The care exists. People just can't find it. We went to the community to understand why — and built MedicBridges to fix it.
-          </p>
-          <Link to="/problem" className="mb-btn" style={{ backgroundColor: 'var(--mb-lime)', color: '#2d3b2d', padding: '1rem 2rem', fontSize: '1.1rem' }}>
-            Read the Full Story <ArrowRight size={20} style={{ marginLeft: '0.5rem' }} />
-          </Link>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section style={{ padding: '6rem 2rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Ready to find care?</h2>
-          <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)', marginBottom: '2.5rem' }}>
-            MedicBridges is free for patients, always. Start your search now or create a profile to get matched automatically.
-          </p>
-          <div className="cta-buttons" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/search" className="mb-btn mb-btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              <Search size={20} style={{ marginRight: '0.5rem' }} /> Search Clinics
-            </Link>
-            <Link to="/patient-signup" className="mb-btn mb-btn-secondary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              Create My Profile
-            </Link>
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
+            <button
+              type="button"
+              onClick={openModal}
+              className="mb-btn mb-btn-secondary"
+              style={{ height: '58px', padding: '0 30px', borderRadius: '13px', fontSize: '17px' }}
+            >
+              Find care near me <span style={{ fontSize: '19px' }}>→</span>
+            </button>
           </div>
         </div>
       </section>
 
       {/* Responsive overrides */}
       <style>{`
-        @media (max-width: 1024px) {
-          .hero-section { padding: 5rem 1.5rem 4rem !important; }
-          .hero-heading { font-size: 3rem !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .features-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .steps-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 1.5rem !important; }
-          .about-split { grid-template-columns: 1fr !important; }
-          .about-split > div:last-child { padding: 3rem 2rem !important; }
+        @media (max-width: 980px) {
+          .cost-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .cta-block { grid-template-columns: 1fr !important; gap: 32px !important; }
+        }
+        @media (max-width: 760px) {
+          .hero-h1 { font-size: 40px !important; }
+          .how-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .privacy-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
         }
         @media (max-width: 640px) {
-          .hero-section { padding: 4rem 1rem 3rem !important; }
-          .hero-heading { font-size: 2.25rem !important; }
-          .hero-buttons { flex-direction: column !important; align-items: center !important; }
-          .hero-buttons .mb-btn { width: 100% !important; justify-content: center !important; }
-          .hero-trust { flex-direction: column !important; align-items: center !important; gap: 0.75rem !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1.5rem !important; }
-          .stats-grid > div > div:first-child { font-size: 2rem !important; }
-          .features-grid { grid-template-columns: 1fr !important; }
-          .steps-grid { grid-template-columns: 1fr !important; }
-          .about-split > div:last-child { padding: 2rem 1.25rem !important; }
-          .about-split > div:last-child h2 { font-size: 1.75rem !important; }
-          .values-row { grid-template-columns: 1fr !important; gap: 1.5rem !important; }
-          .cta-buttons { flex-direction: column !important; }
-          .cta-buttons .mb-btn { width: 100% !important; justify-content: center !important; }
+          .cta-block { padding: 36px 28px !important; }
         }
       `}</style>
 
