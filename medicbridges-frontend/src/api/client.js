@@ -62,13 +62,25 @@ export async function apiGet(path, { params, headers, signal } = {}) {
   }
 
   let body = null;
+  let parseFailed = false;
   const text = await resp.text();
   if (text) {
     try {
       body = JSON.parse(text);
     } catch {
       body = text;
+      parseFailed = true;
     }
+  }
+
+  // A 2xx response that isn't JSON means we hit the wrong origin (e.g. the SPA
+  // host returned index.html because VITE_API_BASE_URL is unset). Treat it as
+  // an error instead of handing non-JSON back to callers expecting objects.
+  if (resp.ok && parseFailed) {
+    throw new ApiError(
+      'Unexpected non-JSON response from the API. Check VITE_API_BASE_URL.',
+      { status: resp.status, code: 'unexpected_response', body },
+    );
   }
 
   if (!resp.ok) {

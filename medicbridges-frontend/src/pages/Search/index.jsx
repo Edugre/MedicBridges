@@ -97,7 +97,7 @@ const Search = () => {
   useEffect(() => {
     let active = true;
     listServices()
-      .then((rows) => active && setServices(rows || []))
+      .then((rows) => active && setServices(Array.isArray(rows) ? rows : []))
       .catch(() => {});
     // eslint-disable-next-line react-hooks/set-state-in-effect
     runSearch(coords);
