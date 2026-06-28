@@ -17,7 +17,7 @@
   /* ---- True Lime accent ---- */
   --mb-true-lime: #CFF152;
   --mb-true-lime-hover: #C0E53F;
-  --mb-true-lime-soft: rgba(207, 241, 82, 0.4);
+  --mb-true-lime-soft: rgba(207, 241, 82, 0.12);
 
   /* Legacy "lime" aliases now resolve to the honey accent so older
      components stay on-brand without a rewrite. */
