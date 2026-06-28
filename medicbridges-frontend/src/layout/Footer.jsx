@@ -30,7 +30,7 @@ const FooterLink = ({ to, children }) => (
 const Footer = () => {
   return (
     <footer style={{ marginTop: 'auto', background: 'var(--mb-bg-primary)' }}>
-      <div style={{ maxWidth: '1160px', margin: '0 auto', padding: '64px 32px 72px' }}>
+      <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '64px 32px 72px' }}>
         <div
           className="footer-grid"
           style={{
@@ -92,7 +92,7 @@ const Footer = () => {
             flexWrap: 'wrap',
           }}
         >
-          <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--mb-text-disabled)', margin: 0, maxWidth: '620px' }}>
+          <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--mb-text-disabled)', margin: 0, maxWidth: '800px' }}>
             MedicBridges is a free information service and not a healthcare provider. Always confirm services, hours, and
             costs directly with the location. A non-commercial FIU student research project.
           </p>

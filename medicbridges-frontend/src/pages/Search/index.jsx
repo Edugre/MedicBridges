@@ -259,7 +259,7 @@ const Search = () => {
               </div>
 
               <div>
-                <button type="button" className="mb-btn mb-btn-primary" style={{ width: '100%', height: '46px' }} onClick={handleApplyFilters} disabled={loading}>
+                <button type="button" className="mb-btn mb-btn-lime" style={{ width: '100%', height: '46px' }} onClick={handleApplyFilters} disabled={loading}>
                   {loading ? 'Searching…' : 'Apply filters'}
                 </button>
               </div>
@@ -286,7 +286,7 @@ const Search = () => {
               <AlertCircle size={36} color="var(--mb-text-muted)" style={{ marginBottom: '1rem' }} />
               <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Couldn't load clinics</h3>
               <p style={{ color: 'var(--mb-text-muted)', marginBottom: '1.25rem', fontSize: '0.95rem' }}>{error}</p>
-              <button type="button" className="mb-btn mb-btn-primary" onClick={() => runSearch()}>Try again</button>
+              <button type="button" className="mb-btn mb-btn-lime" onClick={() => runSearch()}>Try again</button>
             </div>
           )}
 

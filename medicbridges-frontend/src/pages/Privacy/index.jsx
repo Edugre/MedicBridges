@@ -2,7 +2,7 @@ import React from 'react';
 
 const Privacy = () => {
   return (
-    <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '800px', animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '1200px', animation: 'fadeIn 0.6s ease-out' }}>
       
       <div style={{ marginBottom: '3rem' }}>
         <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-bg-surface-hover)', color: 'var(--mb-text-secondary)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem', border: '1px solid var(--mb-border)' }}>

@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { useSearchModal } from '../context/SearchModalContext';
 
 const navLinkStyle = {
-  fontSize: '15px',
+  fontSize: '18px',
   fontWeight: 500,
   color: 'var(--mb-text-secondary)',
   transition: 'color 0.2s',
@@ -32,7 +32,7 @@ const Navbar = () => {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        background: 'rgba(251,247,240,0.86)',
+        background: 'rgba(251,247,240,0.4)',
         backdropFilter: 'saturate(1.3) blur(10px)',
         WebkitBackdropFilter: 'saturate(1.3) blur(10px)',
         borderBottom: '1px solid var(--mb-border-soft)',
@@ -40,7 +40,7 @@ const Navbar = () => {
     >
       <div
         style={{
-          maxWidth: '1160px',
+          maxWidth: '1600px',
           margin: '0 auto',
           minHeight: '74px',
           padding: '0 2rem',
@@ -51,7 +51,7 @@ const Navbar = () => {
         }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: '21px', letterSpacing: '-0.01em', color: 'var(--mb-primary)' }}>
+          <span style={{ fontWeight: 600, fontSize: '28px', letterSpacing: '-0.01em', color: 'var(--mb-primary)' }}>
             MedicBridges
           </span>
         </Link>
@@ -74,23 +74,23 @@ const Navbar = () => {
         {/* Right cluster */}
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#F1ECE0', borderRadius: '999px', padding: '3px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--mb-text-primary)', background: '#fff', borderRadius: '999px', padding: '4px 12px' }}>EN</span>
-            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--mb-text-muted)', padding: '4px 12px', cursor: 'pointer' }}>ES</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)', background: '#fff', borderRadius: '999px', padding: '4px 12px' }}>EN</span>
+            <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--mb-text-muted)', padding: '4px 12px', cursor: 'pointer' }}>ES</span>
           </div>
           <button
             type="button"
             disabled
             title="Coming soon"
             className="mb-btn mb-btn-outline"
-            style={{ height: '42px', padding: '0 18px', borderRadius: '11px', fontSize: '15px', fontWeight: 500, ...disabledBtnStyle }}
+            style={{ height: '42px', padding: '0 18px', borderRadius: '11px', fontSize: '18px', fontWeight: 500, ...disabledBtnStyle }}
           >
             Log in
           </button>
           <button
             type="button"
             onClick={openModal}
-            className="mb-btn mb-btn-primary"
-            style={{ height: '42px', padding: '0 21px', borderRadius: '11px', fontSize: '15px', fontWeight: 500 }}
+            className="mb-btn mb-btn-lime"
+            style={{ height: '42px', padding: '0 21px', borderRadius: '11px', fontSize: '18px', fontWeight: 500 }}
           >
             Find care
           </button>
@@ -123,7 +123,7 @@ const Navbar = () => {
             flexDirection: 'column',
             gap: '0.25rem',
             padding: '0 2rem 1.5rem',
-            background: 'rgba(251,247,240,0.96)',
+            background: 'rgba(251,247,240,0.75)',
             borderTop: '1px solid var(--mb-border-soft)',
           }}
         >
@@ -142,15 +142,15 @@ const Navbar = () => {
             disabled
             title="Coming soon"
             className="mb-btn mb-btn-outline"
-            style={{ marginTop: '0.75rem', fontSize: '15px', fontWeight: 500, ...disabledBtnStyle }}
+            style={{ marginTop: '0.75rem', fontSize: '18px', fontWeight: 500, ...disabledBtnStyle }}
           >
             Log in
           </button>
           <button
             type="button"
             onClick={() => { setMobileOpen(false); openModal(); }}
-            className="mb-btn mb-btn-primary"
-            style={{ marginTop: '0.75rem', fontSize: '15px', fontWeight: 500 }}
+            className="mb-btn mb-btn-lime"
+            style={{ marginTop: '0.75rem', fontSize: '18px', fontWeight: 500 }}
           >
             Find care
           </button>

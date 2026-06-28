@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 
 const PatientSignup = () => {
   return (
-    <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '800px', animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="page-container" style={{ padding: '4rem 2rem', maxWidth: '1200px', animation: 'fadeIn 0.6s ease-out' }}>
       
       <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
         <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem' }}>
           Free — Always
         </div>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Create Your Patient Profile</h1>
-        <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+        <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)', maxWidth: '800px', margin: '0 auto' }}>
           Tell us a little about yourself and we'll match you with the right clinic, pharmacy, or therapist in Miami.
         </p>
       </div>

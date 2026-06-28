@@ -45,9 +45,8 @@ a:hover {
 }
 
 .page-container {
-  max-width: 1160px;
+  width: 100%;
   margin: 0 auto;
-  padding: 2rem;
   animation: fadeIn 0.4s ease-out forwards;
 }
 

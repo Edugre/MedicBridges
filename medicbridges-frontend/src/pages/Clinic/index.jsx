@@ -37,7 +37,7 @@ const Clinic = () => {
   const slidingScale = sites.some((s) => s.accepts_sliding_scale);
 
   return (
-    <div className="page-container" style={{ padding: '3rem 2rem', maxWidth: '900px', animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="page-container" style={{ padding: '3rem 2rem', maxWidth: '1200px', animation: 'fadeIn 0.6s ease-out' }}>
       <Link to="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--mb-text-secondary)', marginBottom: '2rem', fontSize: '0.95rem' }}>
         <ArrowLeft size={18} /> Back to search results
       </Link>

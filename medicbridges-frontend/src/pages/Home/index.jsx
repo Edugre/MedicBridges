@@ -4,7 +4,7 @@ import heroImage from '../../assets/hero-clinic.png';
 import { useSearchModal } from '../../context/SearchModalContext';
 
 const label = {
-  fontSize: '13px',
+  fontSize: '16px',
   letterSpacing: '0.14em',
   textTransform: 'uppercase',
   fontWeight: 600,
@@ -93,21 +93,21 @@ const Home = () => {
     <div className="landing-fade-in">
 
       {/* ============ HERO ============ */}
-      <section id="hero" style={{ maxWidth: '880px', margin: '0 auto', padding: '104px 32px 72px', textAlign: 'center' }}>
+      <section id="hero" style={{ maxWidth: '1200px', margin: '0 auto', padding: '104px 32px 72px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '26px', ...label }}>
           Care that's within reach
         </div>
-        <h1 className="hero-h1" style={{ fontSize: '62px', fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.03em', margin: '0 0 24px', textWrap: 'balance' }}>
+        <h1 className="hero-h1" style={{ fontSize: '72px', fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.03em', margin: '0 0 24px', textWrap: 'balance' }}>
           Find low-cost care and affordable medicine, close to home.
         </h1>
-        <p style={{ fontSize: '20px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: '0 auto 36px', maxWidth: '600px', textWrap: 'pretty' }}>
+        <p style={{ fontSize: '24px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: '0 auto 36px', maxWidth: '800px', textWrap: 'pretty' }}>
           Answer a few simple questions and we'll match you to clinics and pharmacies you may qualify for. Most people finish in about two minutes.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
           <button
             type="button"
             onClick={openModal}
-            className="mb-btn mb-btn-primary"
+            className="mb-btn mb-btn-lime"
             style={{ height: '58px', padding: '0 34px', borderRadius: '13px', fontSize: '17.5px' }}
           >
             Find care near me <span style={{ fontSize: '19px' }}>→</span>
@@ -119,7 +119,7 @@ const Home = () => {
       </section>
 
       {/* ============ IMAGE BAND ============ */}
-      <section style={{ maxWidth: '1160px', margin: '0 auto 8px', padding: '0 32px' }}>
+      <section style={{ maxWidth: '1600px', margin: '0 auto 8px', padding: '0 32px' }}>
         <div style={{ height: '430px', borderRadius: '24px', overflow: 'hidden', border: '1px solid var(--mb-border)' }}>
           <img
             src={heroImage}
@@ -130,35 +130,35 @@ const Home = () => {
       </section>
 
       {/* ============ HOW IT WORKS ============ */}
-      <section id="how" style={{ maxWidth: '1160px', margin: '0 auto', padding: '104px 32px 96px' }}>
-        <div style={{ maxWidth: '620px', margin: '0 0 64px' }}>
+      <section id="how" style={{ maxWidth: '1600px', margin: '0 auto', padding: '104px 32px 96px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 0 64px' }}>
           <div style={{ ...label, marginBottom: '16px' }}>How it works</div>
-          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: 0, textWrap: 'balance' }}>
+          <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: 0, textWrap: 'balance' }}>
             Three simple steps to care you can afford.
           </h2>
         </div>
         <div className="how-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '48px' }}>
           {STEPS.map((step) => (
             <div key={step.n} style={{ borderTop: `2px solid ${step.color}`, paddingTop: '24px' }}>
-              <div style={{ fontSize: '46px', fontWeight: 600, color: step.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '18px' }}>
+              <div style={{ fontSize: '54px', fontWeight: 600, color: step.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '18px' }}>
                 {step.n}
               </div>
-              <h3 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em', margin: '0 0 11px' }}>{step.title}</h3>
-              <p style={{ fontSize: '16px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0 }}>{step.body}</p>
+              <h3 style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.01em', margin: '0 0 11px' }}>{step.title}</h3>
+              <p style={{ fontSize: '18px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0 }}>{step.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ============ COST & ELIGIBILITY ============ */}
-      <section id="cost" style={{ background: 'var(--mb-bg-sage)' }}>
-        <div className="cost-grid" style={{ maxWidth: '1160px', margin: '0 auto', padding: '96px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '72px', alignItems: 'center' }}>
+      <section id="cost" style={{ background: 'var(--mb-true-lime-soft)' }}>
+        <div className="cost-grid" style={{ maxWidth: '1600px', margin: '0 auto', padding: '96px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '72px', alignItems: 'center' }}>
           <div>
             <div style={{ ...label, marginBottom: '16px' }}>Cost &amp; eligibility</div>
-            <h2 style={{ fontSize: '40px', fontWeight: 600, letterSpacing: '-0.025em', margin: '0 0 20px', lineHeight: 1.1, textWrap: 'balance' }}>
+            <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', margin: '0 0 20px', lineHeight: 1.1, textWrap: 'balance' }}>
               You probably qualify — and you won't pay full price.
             </h2>
-            <p style={{ fontSize: '18px', lineHeight: 1.62, color: '#41504A', margin: '0 0 32px', maxWidth: '480px' }}>
+            <p style={{ fontSize: '20px', lineHeight: 1.62, color: '#41504A', margin: '0 0 32px', maxWidth: '480px' }}>
               Sliding-scale clinics set your fee based on what you earn and how many people you support. Many visits cost very little, and some are free.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -168,8 +168,8 @@ const Home = () => {
                     <Check size={14} />
                   </span>
                   <div>
-                    <div style={{ fontSize: '16.5px', fontWeight: 600 }}>{item.title}</div>
-                    <div style={{ fontSize: '15px', color: 'var(--mb-text-secondary)', lineHeight: 1.5, marginTop: '2px' }}>{item.body}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 600 }}>{item.title}</div>
+                    <div style={{ fontSize: '17px', color: 'var(--mb-text-secondary)', lineHeight: 1.5, marginTop: '2px' }}>{item.body}</div>
                   </div>
                 </div>
               ))}
@@ -178,10 +178,10 @@ const Home = () => {
 
           {/* Estimate card */}
           <div style={{ background: 'var(--mb-bg-surface)', border: '1px solid var(--mb-border)', borderRadius: '22px', padding: '32px', boxShadow: 'var(--mb-shadow-lg)' }}>
-            <div style={{ fontSize: '13px', color: 'var(--mb-text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
+            <div style={{ fontSize: '15px', color: 'var(--mb-text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
               Estimate · household of 3
             </div>
-            <div style={{ fontSize: '15px', color: 'var(--mb-text-secondary)', marginBottom: '26px' }}>A primary-care visit on a sliding scale</div>
+            <div style={{ fontSize: '17px', color: 'var(--mb-text-secondary)', marginBottom: '26px' }}>A primary-care visit on a sliding scale</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ height: '112px', background: '#F4F1EA', border: '1px solid var(--mb-border-soft)', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -191,7 +191,7 @@ const Home = () => {
               </div>
               <div style={{ fontSize: '22px', color: '#C9C2B2', paddingBottom: '42px' }}>→</div>
               <div style={{ flex: 1 }}>
-                <div style={{ height: '112px', background: 'var(--mb-bg-sage)', border: '1.5px solid var(--mb-primary)', borderRadius: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <div style={{ height: '112px', background: 'var(--mb-true-lime)', border: '1.5px solid var(--mb-primary)', borderRadius: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                   <span style={{ fontSize: '32px', fontWeight: 600, color: 'var(--mb-primary)', letterSpacing: '-0.02em' }}>$25</span>
                   <span style={{ fontSize: '11px', color: 'var(--mb-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>Lowest tier</span>
                 </div>
@@ -206,34 +206,34 @@ const Home = () => {
       </section>
 
       {/* ============ PRIVACY ============ */}
-      <section id="privacy" style={{ maxWidth: '1160px', margin: '0 auto', padding: '104px 32px 96px' }}>
-        <div style={{ maxWidth: '620px', margin: '0 0 60px' }}>
+      <section id="privacy" style={{ maxWidth: '1600px', margin: '0 auto', padding: '104px 32px 96px' }}>
+        <div style={{ maxWidth: '800px', margin: '0 0 60px' }}>
           <div style={{ ...label, marginBottom: '16px' }}>Private by design</div>
-          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: '0 0 14px', textWrap: 'balance' }}>
+          <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: '0 0 14px', textWrap: 'balance' }}>
             Your information stays yours.
           </h2>
-          <p style={{ fontSize: '18px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>
+          <p style={{ fontSize: '20px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>
             Look for help without worrying about who's watching.
           </p>
         </div>
         <div className="privacy-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '44px' }}>
           {PRIVACY.map((item) => (
             <div key={item.title} style={{ borderTop: '1px solid var(--mb-border-soft)', paddingTop: '26px' }}>
-              <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: 'var(--mb-bg-sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+              <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: 'var(--mb-true-lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 {item.icon}
               </div>
-              <h3 style={{ fontSize: '19px', fontWeight: 600, margin: '0 0 9px' }}>{item.title}</h3>
-              <p style={{ fontSize: '15.5px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>{item.body}</p>
+              <h3 style={{ fontSize: '22px', fontWeight: 600, margin: '0 0 9px' }}>{item.title}</h3>
+              <p style={{ fontSize: '18px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>{item.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ============ FAQ ============ */}
-      <section id="faq" style={{ maxWidth: '820px', margin: '0 auto', padding: '0 32px 96px' }}>
+      <section id="faq" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 96px' }}>
         <div style={{ margin: '0 0 40px' }}>
           <div style={{ ...label, marginBottom: '16px' }}>Real questions, real answers</div>
-          <h2 style={{ fontSize: '42px', fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>The things people actually ask.</h2>
+          <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>The things people actually ask.</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {FAQS.map((item, i) => {
@@ -257,7 +257,7 @@ const Home = () => {
                     color: 'var(--mb-text-primary)',
                   }}
                 >
-                  <span style={{ fontSize: '18px', fontWeight: 600 }}>{item.q}</span>
+                  <span style={{ fontSize: '22px', fontWeight: 600 }}>{item.q}</span>
                   <ChevronDown
                     size={22}
                     color="var(--mb-primary)"
@@ -265,7 +265,7 @@ const Home = () => {
                   />
                 </button>
                 {open && (
-                  <p style={{ fontSize: '16px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0, padding: '0 24px 24px' }}>
+                  <p style={{ fontSize: '18px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: 0, padding: '0 24px 24px' }}>
                     {item.a}
                   </p>
                 )}
@@ -276,17 +276,17 @@ const Home = () => {
       </section>
 
       {/* ============ CTA ============ */}
-      <section style={{ maxWidth: '1160px', margin: '0 auto', padding: '0 32px 96px' }}>
+      <section style={{ maxWidth: '1600px', margin: '0 auto', padding: '0 32px 96px' }}>
         <div
           className="cta-block"
           style={{ background: 'var(--mb-primary)', borderRadius: '28px', padding: '60px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '48px', alignItems: 'center', position: 'relative', overflow: 'hidden' }}
         >
           <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '180px', height: '180px', borderRadius: '50%', background: 'var(--mb-secondary)', opacity: 0.35 }} />
           <div style={{ position: 'relative' }}>
-            <h2 style={{ fontSize: '36px', fontWeight: 600, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 14px', lineHeight: 1.12, textWrap: 'balance' }}>
+            <h2 style={{ fontSize: '44px', fontWeight: 600, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 14px', lineHeight: 1.12, textWrap: 'balance' }}>
               Ready when you are. It takes about two minutes.
             </h2>
-            <p style={{ fontSize: '17px', lineHeight: 1.55, color: '#C2E4D9', margin: 0 }}>
+            <p style={{ fontSize: '20px', lineHeight: 1.55, color: '#C2E4D9', margin: 0 }}>
               No login, no insurance, no pressure. Find the care and medicine you can afford.
             </p>
           </div>
@@ -294,7 +294,7 @@ const Home = () => {
             <button
               type="button"
               onClick={openModal}
-              className="mb-btn mb-btn-secondary"
+              className="mb-btn mb-btn-lime"
               style={{ height: '58px', padding: '0 30px', borderRadius: '13px', fontSize: '17px' }}
             >
               Find care near me <span style={{ fontSize: '19px' }}>→</span>

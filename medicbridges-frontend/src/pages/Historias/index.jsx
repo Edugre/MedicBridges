@@ -47,14 +47,14 @@ const Historias = () => {
 
       {/* Hero — cream section */}
       <section style={{ padding: '5rem 2rem', textAlign: 'center', backgroundColor: 'var(--mb-bg-primary)' }}>
-        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginBottom: '1rem' }}>
             Patient Experiences
           </div>
           <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>
             <em>Historias</em>
           </h1>
-          <p style={{ fontSize: '1.15rem', color: 'var(--mb-text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
+          <p style={{ fontSize: '1.15rem', color: 'var(--mb-text-secondary)', maxWidth: '800px', margin: '0 auto' }}>
             Real stories from patients who found the care they needed in Miami through MedicBridges.
           </p>
         </div>
@@ -62,7 +62,7 @@ const Historias = () => {
 
       {/* Deepwell teal card grid */}
       <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--mb-primary)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
             <h2 style={{ fontSize: '2.25rem', color: '#fff' }}>
               <em>Strong communities, thriving lives.</em>
@@ -125,7 +125,7 @@ const Historias = () => {
 
       {/* Values bar — deeper teal with icons */}
       <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--mb-primary-hover)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
           <div className="values-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem' }}>
             <div style={{ textAlign: 'center', padding: '2rem', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 'var(--mb-radius-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ marginBottom: '1rem' }}><Lock size={28} color="var(--mb-honey)" /></div>

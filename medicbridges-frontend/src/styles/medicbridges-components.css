@@ -40,6 +40,17 @@
   color: var(--mb-honey-ink);
 }
 
+/* Lime Button */
+.mb-btn-lime {
+  background-color: var(--mb-true-lime);
+  color: #000000;
+}
+
+.mb-btn-lime:hover {
+  background-color: var(--mb-true-lime-hover);
+  color: #000000;
+}
+
 /* Outline Button */
 .mb-btn-outline {
   background-color: transparent;
