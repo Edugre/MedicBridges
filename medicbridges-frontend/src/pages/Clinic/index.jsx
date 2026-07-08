@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, ArrowLeft, Check, ExternalLink, Pill,
-  AlertCircle, Building2, Send, Bookmark,
+  AlertCircle, Building2, Send, Bookmark, ChevronDown,
 } from 'lucide-react';
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
@@ -13,6 +13,7 @@ const Clinic = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [locationsOpen, setLocationsOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -161,8 +162,18 @@ const Clinic = () => {
 
               {sites.length > 1 && (
                 <div className="dcard">
-                  <div className="sech"><MapPin size={18} color="var(--mb-primary)" /> Other locations ({sites.length})</div>
-                  {sites.map((s) => (
+                  <button
+                    type="button"
+                    className="sech loc-toggle"
+                    aria-expanded={locationsOpen}
+                    onClick={() => setLocationsOpen((o) => !o)}
+                    style={{ marginBottom: locationsOpen ? '16px' : 0 }}
+                  >
+                    <MapPin size={18} color="var(--mb-primary)" />
+                    <span style={{ flex: 1, textAlign: 'left' }}>Other locations ({sites.length})</span>
+                    <ChevronDown size={18} className="loc-chevron" style={{ transform: locationsOpen ? 'rotate(180deg)' : 'none' }} />
+                  </button>
+                  {locationsOpen && sites.map((s) => (
                     <div key={s.site_id} className="loc">
                       <div>
                         <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{s.name}</div>
@@ -278,6 +289,12 @@ const Clinic = () => {
           text-transform: uppercase; color: var(--mb-text-muted); margin-bottom: 2px;
         }
         .kv .val { font-size: 14px; font-weight: 500; color: var(--mb-text-primary); line-height: 1.4; }
+        .loc-toggle {
+          width: 100%; background: none; border: none; padding: 0;
+          cursor: pointer; font: inherit;
+        }
+        .loc-toggle .loc-chevron { color: var(--mb-text-muted); transition: transform 0.2s ease; flex-shrink: 0; }
+        .loc-toggle:hover .loc-chevron { color: var(--mb-primary); }
         .loc {
           display: flex; justify-content: space-between; gap: 14px;
           padding: 14px 0; border-bottom: 1px solid #F1ECE1;
