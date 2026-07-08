@@ -35,8 +35,9 @@ const Search = () => {
   const [selectedSiteId, setSelectedSiteId] = useState(null);
 
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
-  const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(true);
   const [mobileView, setMobileView] = useState('map');
+  const sheetTouchY = useRef(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches,
   );
@@ -480,9 +481,19 @@ const Search = () => {
             <button
               type="button"
               onClick={() => setSheetCollapsed((c) => !c)}
+              onTouchStart={(e) => { sheetTouchY.current = e.touches[0].clientY; }}
+              onTouchEnd={(e) => {
+                const start = sheetTouchY.current;
+                sheetTouchY.current = null;
+                if (start == null) return;
+                const dy = e.changedTouches[0].clientY - start;
+                if (Math.abs(dy) < 24) return; // treat as tap; let onClick toggle
+                e.preventDefault();
+                setSheetCollapsed(dy < 0); // swipe down → reveal, swipe up → hide
+              }}
               aria-expanded={!sheetCollapsed}
               aria-label={sheetCollapsed ? 'Show results' : 'Hide results'}
-              style={{ display: 'block', width: '100%', padding: '10px 0 8px', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'block', width: '100%', padding: '12px 0 10px', background: 'none', border: 'none', cursor: 'pointer', touchAction: 'none' }}
             >
               <span style={{ display: 'block', width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '0 auto' }} />
             </button>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Pill, Navigation } from 'lucide-react';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../lib/format';
@@ -74,7 +73,15 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
       {/* Top row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '15.5px', fontWeight: 600, color: 'var(--mb-text-primary)', lineHeight: 1.25 }}>
+          <div
+            style={{
+              fontSize: '15.5px',
+              fontWeight: 600,
+              color: 'var(--mb-text-primary)',
+              lineHeight: 1.25,
+              ...(width ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : null),
+            }}
+          >
             {site.name || org.name || 'Clinic'}
           </div>
           {address && (
@@ -92,7 +99,7 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
 
       {/* Badge row */}
       {(org.has_340b || site.accepts_sliding_scale || categories.length > 0) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ display: 'flex', flexWrap: width ? 'nowrap' : 'wrap', gap: '6px', overflow: width ? 'hidden' : undefined }}>
           {org.has_340b && (
             <span style={{ ...badgeBase, background: 'var(--mb-honey-soft)', color: '#B87814', border: '1px solid #F2E0C2' }}>
               <Pill size={11} /> 340B meds
