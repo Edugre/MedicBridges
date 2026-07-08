@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Lock, Search, User, X } from 'lucide-react';
 import { useSearchModal } from '../context/SearchModalContext';
@@ -99,7 +99,7 @@ const SearchOptionsModal = () => {
         aria-modal="true"
         aria-labelledby="search-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="search-modal search-modal-panel"
+        className="search-modal search-modal-panel search-modal-desktop"
         style={{
           position: 'relative',
           background: '#fff',
@@ -316,6 +316,93 @@ const SearchOptionsModal = () => {
         </div>
       </div>
 
+      {/* ===== Mobile bottom sheet ===== */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="search-sheet-title"
+        onClick={(e) => e.stopPropagation()}
+        className="search-modal-sheet"
+      >
+        <div className="search-sheet-grab" />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '6px' }}>
+          <h2 id="search-sheet-title" style={{ fontSize: '21px', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.2, margin: 0, color: 'var(--mb-text-primary)' }}>
+            How would you like to search?
+          </h2>
+          <button
+            type="button"
+            onClick={closeModal}
+            aria-label="Close"
+            className="search-sheet-close"
+            style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#F1ECE0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mb-text-secondary)', flexShrink: 0, cursor: 'pointer' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <p style={{ fontSize: '14px', color: 'var(--mb-text-secondary)', lineHeight: 1.45, margin: '0 0 20px' }}>
+          Start right away — no account needed.
+        </p>
+
+        {/* Primary: anonymous */}
+        <div style={{ position: 'relative', border: '1.5px solid var(--mb-primary)', background: '#F3FAF7', borderRadius: '18px', padding: '18px 18px 20px' }}>
+          <span style={{ position: 'absolute', top: '-11px', left: '18px', background: 'var(--mb-honey)', color: '#3a2403', fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '999px' }}>
+            Recommended
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '13px', background: 'var(--mb-bg-sage)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Search size={22} color="var(--mb-primary)" strokeWidth={2} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '18px', fontWeight: 600, lineHeight: 1.15, margin: 0, color: 'var(--mb-text-primary)' }}>Search anonymously</h3>
+              <div style={{ fontSize: '13px', color: 'var(--mb-text-secondary)', marginTop: '2px' }}>Just your ZIP code — nothing stored</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '16px' }}>
+            {['Nearby clinics', 'Hours & phone', 'Sliding-scale info'].map((chip) => (
+              <span key={chip} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: 'var(--mb-primary)', background: 'var(--mb-bg-sage)', padding: '5px 10px', borderRadius: '999px' }}>
+                <Check size={12} strokeWidth={3} /> {chip}
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleAnonymousClick}
+            className="search-sheet-cta"
+            style={{ width: '100%', height: '52px', border: 'none', borderRadius: '14px', background: 'var(--mb-primary)', color: '#fff', fontWeight: 600, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            Search anonymously <ArrowRight size={18} />
+          </button>
+        </div>
+
+        {/* Secondary: create account (coming soon) */}
+        <div style={{ marginTop: '14px', border: '1px solid var(--mb-border)', background: 'var(--mb-bg-primary)', borderRadius: '18px', padding: '16px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#EFEAE0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <User size={20} color="var(--mb-text-muted)" strokeWidth={2} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#3B4642', margin: 0 }}>Create an account</h3>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--mb-text-muted)', background: '#EFEAE0', padding: '3px 9px', borderRadius: '999px' }}>Soon</span>
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--mb-text-muted)', marginTop: '2px' }}>Save clinics &amp; get cost estimates</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled
+            style={{ width: '100%', height: '48px', border: '1.5px solid #CBD3CE', borderRadius: '14px', background: 'transparent', color: 'var(--mb-text-secondary)', fontWeight: 600, fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'not-allowed' }}
+          >
+            Accounts coming soon
+          </button>
+        </div>
+
+        <div style={{ textAlign: 'center', fontSize: '12.5px', color: 'var(--mb-text-muted)', marginTop: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <Lock size={13} /> Free · Confidential · No login required
+        </div>
+      </div>
+
       <style>{`
         .search-modal-close:hover {
           color: var(--mb-primary);
@@ -323,15 +410,37 @@ const SearchOptionsModal = () => {
         .search-modal-cta:hover {
           background: var(--mb-primary-hover);
         }
+        .search-sheet-cta:hover { background: var(--mb-primary-hover); }
+        .search-sheet-close:hover { color: var(--mb-primary); }
+
+        /* Bottom sheet is mobile-only */
+        .search-modal-sheet { display: none; }
+
         @media (max-width: 720px) {
-          .search-modal-grid {
-            grid-template-columns: 1fr !important;
-            min-height: auto !important;
+          .search-modal-overlay {
+            align-items: flex-end !important;
+            justify-content: stretch !important;
+            padding: 0 !important;
           }
-          .search-modal-grid > div:first-child {
-            border-right: none !important;
-            border-bottom: 1px solid var(--mb-border-soft);
+          .search-modal-desktop { display: none !important; }
+          .search-modal-sheet {
+            display: block;
+            width: 100%;
+            background: #fff;
+            border-radius: 26px 26px 0 0;
+            box-shadow: 0 -12px 40px rgba(0,0,0,.2);
+            padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+            animation: sheet-up 0.26s ease-out;
           }
+          .search-sheet-grab {
+            width: 40px; height: 5px; border-radius: 999px;
+            background: #D8D2C4; margin: 4px auto 16px;
+          }
+        }
+
+        @keyframes sheet-up {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
         }
       `}</style>
     </div>
