@@ -5,6 +5,7 @@ import { useGeolocation } from '../../hooks/useGeolocation';
 import { humanizeCategory } from '../../lib/format';
 import ClinicCard from '../../components/ClinicCard';
 import SearchMap from '../../components/SearchMap';
+import SearchLoadingModal from '../../components/SearchLoadingModal';
 
 const RADIUS_OPTIONS = [1, 2, 5, 10, 20];
 
@@ -128,6 +129,7 @@ const Search = () => {
 
   return (
     <div className="search-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 74px)', animation: 'fadeIn 0.4s ease-out forwards' }}>
+      <SearchLoadingModal open={loading} onCancel={() => abortRef.current?.abort()} />
       {/* Top toolbar */}
       <div style={{ flexShrink: 0, borderBottom: '1px solid var(--mb-border)', background: 'var(--mb-bg-primary)', zIndex: 10 }}>
         <div style={{ padding: '1rem 1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
