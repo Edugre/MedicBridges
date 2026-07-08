@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Check, UserX, ShieldCheck, EyeOff } from 'lucide-react';
 import heroImage from '../../assets/hero-clinic.png';
 import { useSearchModal } from '../../context/SearchModalContext';
+import { useLang } from '../../context/LangContext';
 
 const label = {
   fontSize: '16px',
@@ -11,82 +12,110 @@ const label = {
   color: 'var(--mb-primary)',
 };
 
-const STEPS = [
-  {
-    n: '01',
-    color: 'var(--mb-primary)',
-    title: 'Tell us a little about you',
-    body: "Your ZIP, household size, and the care you need. An estimate of your income is all it takes — no proof required.",
+const CONTENT = {
+  en: {
+    eyebrow: "Care that's within reach",
+    heroTitle: 'Find low-cost care and affordable medicine, close to home.',
+    heroSub: "Answer a few simple questions and we'll match you to clinics and pharmacies you may qualify for. Most people finish in about two minutes.",
+    heroCta: 'Find care near me',
+    heroBadge: 'Free · Confidential · No login required',
+    howLabel: 'How it works',
+    howTitle: 'Three simple steps to care you can afford.',
+    steps: [
+      { n: '01', color: 'var(--mb-primary)', title: 'Tell us a little about you', body: "Your ZIP, household size, and the care you need. An estimate of your income is all it takes — no proof required." },
+      { n: '02', color: 'var(--mb-primary)', title: 'See your matches instantly', body: 'We rank nearby clinics and pharmacies by what you likely qualify for, with clear costs and hours on every result.' },
+      { n: '03', color: 'var(--mb-honey)', title: 'Get care for less', body: "Call, get directions, and ask for the sliding-scale program at check-in. We'll show you exactly what to say." },
+    ],
+    costLabel: 'Cost & eligibility',
+    costTitle: "You probably qualify — and you won't pay full price.",
+    costSub: "Sliding-scale clinics set your fee based on what you earn and how many people you support. Many visits cost very little, and some are free.",
+    eligibility: [
+      { title: 'No proof of income needed to start', body: 'Begin care first; most clinics sort out paperwork later.' },
+      { title: 'No insurance required', body: 'Uninsured patients are welcome at every clinic we list.' },
+      { title: 'Everyone is served', body: 'Community health centers care for you regardless of immigration status.' },
+    ],
+    estimateLabel: 'Estimate · household of 3',
+    estimateSub: 'A primary-care visit on a sliding scale',
+    fullPrice: 'Full price',
+    likelyPay: "What you'd likely pay",
+    estimateNote: "Your actual fee depends on income and household size. We'll show your likely tier before you ever call.",
+    privacyLabel: 'Private by design',
+    privacyTitle: 'Your information stays yours.',
+    privacySub: "Look for help without worrying about who's watching.",
+    privacy: [
+      { title: 'No account, no login', body: 'Use the whole tool without signing up or giving us your name.' },
+      { title: 'We never sell your data', body: 'No ads, no data brokers. Your income is used only to match programs.' },
+      { title: 'Nothing is shared', body: "Your answers aren't sent to clinics or anyone else without your say-so." },
+    ],
+    faqLabel: 'Real questions, real answers',
+    faqTitle: 'The things people actually ask.',
+    faqs: [
+      { q: 'Is this really free?', a: "Yes. MedicBridges is completely free to use. We don't run ads and we don't sell your information — this is a public-good tool, not a business that profits from your visit." },
+      { q: 'Do I need insurance?', a: 'No. Many of the clinics and pharmacies we list serve people with no insurance at all, and charge based on what you can afford.' },
+      { q: 'Will I have to prove my income?', a: 'Not to begin. Most clinics let you start care and complete any sliding-scale paperwork afterward. We only ask for an estimate so we can show what you likely qualify for.' },
+      { q: "What if I'm undocumented?", a: 'Community health centers care for everyone, regardless of immigration status. MedicBridges never asks about it, and your answers are never shared.' },
+    ],
+    ctaTitle: 'Ready when you are. It takes about two minutes.',
+    ctaSub: 'No login, no insurance, no pressure. Find the care and medicine you can afford.',
   },
-  {
-    n: '02',
-    color: 'var(--mb-primary)',
-    title: 'See your matches instantly',
-    body: 'We rank nearby clinics and pharmacies by what you likely qualify for, with clear costs and hours on every result.',
+  es: {
+    eyebrow: 'Atención médica a tu alcance',
+    heroTitle: 'Encuentra atención médica de bajo costo y medicamentos accesibles, cerca de ti.',
+    heroSub: 'Responde unas preguntas sencillas y te conectaremos con clínicas y farmacias para las que puedes calificar. La mayoría termina en unos dos minutos.',
+    heroCta: 'Encuentra atención cerca de mí',
+    heroBadge: 'Gratis · Confidencial · Sin registro requerido',
+    howLabel: 'Cómo funciona',
+    howTitle: 'Tres pasos simples para recibir atención que puedes pagar.',
+    steps: [
+      { n: '01', color: 'var(--mb-primary)', title: 'Cuéntanos un poco sobre ti', body: "Tu código postal, el tamaño de tu hogar y el cuidado que necesitas. Solo necesitamos un estimado de tus ingresos — sin comprobantes." },
+      { n: '02', color: 'var(--mb-primary)', title: 'Ve tus opciones al instante', body: 'Clasificamos las clínicas y farmacias cercanas según lo que probablemente califiques, con costos y horarios claros en cada resultado.' },
+      { n: '03', color: 'var(--mb-honey)', title: 'Recibe atención por menos', body: "Llama, obtén indicaciones y pide el programa de escala móvil al registrarte. Te mostraremos exactamente qué decir." },
+    ],
+    costLabel: 'Costo y elegibilidad',
+    costTitle: 'Probablemente calificas — y no pagarás el precio completo.',
+    costSub: 'Las clínicas con escala móvil fijan tu tarifa según lo que ganas y cuántas personas dependes de ti. Muchas visitas cuestan muy poco, y algunas son gratuitas.',
+    eligibility: [
+      { title: 'No necesitas comprobante de ingresos para empezar', body: 'Comienza la atención primero; la mayoría de las clínicas resuelve el papeleo después.' },
+      { title: 'No se requiere seguro médico', body: 'Los pacientes sin seguro son bienvenidos en todas las clínicas que listamos.' },
+      { title: 'Se atiende a todos', body: 'Los centros de salud comunitaria te atienden sin importar tu estatus migratorio.' },
+    ],
+    estimateLabel: 'Estimado · hogar de 3 personas',
+    estimateSub: 'Una visita de atención primaria con escala móvil',
+    fullPrice: 'Precio completo',
+    likelyPay: 'Lo que probablemente pagarías',
+    estimateNote: 'Tu tarifa real depende de tus ingresos y el tamaño de tu hogar. Te mostraremos tu nivel probable antes de que llames.',
+    privacyLabel: 'Privacidad por diseño',
+    privacyTitle: 'Tu información es tuya.',
+    privacySub: 'Busca ayuda sin preocuparte por quién te observa.',
+    privacy: [
+      { title: 'Sin cuenta ni registro', body: 'Usa la herramienta completa sin registrarte ni darnos tu nombre.' },
+      { title: 'Nunca vendemos tus datos', body: 'Sin anuncios ni corredores de datos. Tus ingresos solo se usan para encontrar programas.' },
+      { title: 'Nada se comparte', body: 'Tus respuestas no se envían a clínicas ni a nadie más sin tu autorización.' },
+    ],
+    faqLabel: 'Preguntas reales, respuestas reales',
+    faqTitle: 'Lo que la gente realmente pregunta.',
+    faqs: [
+      { q: '¿Es realmente gratis?', a: 'Sí. MedicBridges es completamente gratuito. No publicamos anuncios ni vendemos tu información — es una herramienta de bien público, no un negocio.' },
+      { q: '¿Necesito seguro médico?', a: 'No. Muchas de las clínicas y farmacias que listamos atienden a personas sin seguro y cobran según lo que puedes pagar.' },
+      { q: '¿Tendré que comprobar mis ingresos?', a: 'No para comenzar. La mayoría de las clínicas te permite iniciar la atención y completar el papeleo de escala móvil después. Solo pedimos un estimado para mostrarte lo que probablemente calificas.' },
+      { q: '¿Qué pasa si soy indocumentado?', a: 'Los centros de salud comunitaria atienden a todos sin importar el estatus migratorio. MedicBridges nunca pregunta al respecto, y tus respuestas nunca se comparten.' },
+    ],
+    ctaTitle: 'Listo cuando tú lo estés. Solo toma unos dos minutos.',
+    ctaSub: 'Sin registro, sin seguro, sin presión. Encuentra la atención médica y los medicamentos que puedes costear.',
   },
-  {
-    n: '03',
-    color: 'var(--mb-honey)',
-    title: 'Get care for less',
-    body: "Call, get directions, and ask for the sliding-scale program at check-in. We'll show you exactly what to say.",
-  },
-];
+};
 
-const ELIGIBILITY = [
-  {
-    title: 'No proof of income needed to start',
-    body: 'Begin care first; most clinics sort out paperwork later.',
-  },
-  {
-    title: 'No insurance required',
-    body: 'Uninsured patients are welcome at every clinic we list.',
-  },
-  {
-    title: 'Everyone is served',
-    body: 'Community health centers care for you regardless of immigration status.',
-  },
-];
-
-const PRIVACY = [
-  {
-    icon: <UserX size={22} color="var(--mb-primary)" strokeWidth={2} />,
-    title: 'No account, no login',
-    body: 'Use the whole tool without signing up or giving us your name.',
-  },
-  {
-    icon: <ShieldCheck size={22} color="var(--mb-primary)" strokeWidth={2} />,
-    title: 'We never sell your data',
-    body: 'No ads, no data brokers. Your income is used only to match programs.',
-  },
-  {
-    icon: <EyeOff size={22} color="var(--mb-primary)" strokeWidth={2} />,
-    title: 'Nothing is shared',
-    body: "Your answers aren't sent to clinics or anyone else without your say-so.",
-  },
-];
-
-const FAQS = [
-  {
-    q: 'Is this really free?',
-    a: "Yes. MedicBridges is completely free to use. We don't run ads and we don't sell your information — this is a public-good tool, not a business that profits from your visit.",
-  },
-  {
-    q: 'Do I need insurance?',
-    a: 'No. Many of the clinics and pharmacies we list serve people with no insurance at all, and charge based on what you can afford.',
-  },
-  {
-    q: 'Will I have to prove my income?',
-    a: 'Not to begin. Most clinics let you start care and complete any sliding-scale paperwork afterward. We only ask for an estimate so we can show what you likely qualify for.',
-  },
-  {
-    q: "What if I'm undocumented?",
-    a: 'Community health centers care for everyone, regardless of immigration status. MedicBridges never asks about it, and your answers are never shared.',
-  },
+const PRIVACY_ICONS = [
+  <UserX size={22} color="var(--mb-primary)" strokeWidth={2} />,
+  <ShieldCheck size={22} color="var(--mb-primary)" strokeWidth={2} />,
+  <EyeOff size={22} color="var(--mb-primary)" strokeWidth={2} />,
 ];
 
 const Home = () => {
   const [openIndex, setOpenIndex] = useState(0);
   const { openModal } = useSearchModal();
+  const { lang } = useLang();
+  const t = CONTENT[lang];
   const toggle = (i) => setOpenIndex((cur) => (cur === i ? -1 : i));
 
   return (
@@ -95,13 +124,13 @@ const Home = () => {
       {/* ============ HERO ============ */}
       <section id="hero" style={{ maxWidth: '1200px', margin: '0 auto', padding: '104px 32px 72px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '26px', ...label }}>
-          Care that's within reach
+          {t.eyebrow}
         </div>
         <h1 className="hero-h1" style={{ fontSize: '72px', fontWeight: 600, lineHeight: 1.04, letterSpacing: '-0.03em', margin: '0 0 24px', textWrap: 'balance' }}>
-          Find low-cost care and affordable medicine, close to home.
+          {t.heroTitle}
         </h1>
         <p style={{ fontSize: '24px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: '0 auto 36px', maxWidth: '800px', textWrap: 'pretty' }}>
-          Answer a few simple questions and we'll match you to clinics and pharmacies you may qualify for. Most people finish in about two minutes.
+          {t.heroSub}
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '18px' }}>
           <button
@@ -110,10 +139,10 @@ const Home = () => {
             className="mb-btn mb-btn-lime"
             style={{ height: '58px', padding: '0 34px', borderRadius: '13px', fontSize: '17.5px' }}
           >
-            Find care near me <span style={{ fontSize: '19px' }}>→</span>
+            {t.heroCta} <span style={{ fontSize: '19px' }}>→</span>
           </button>
           <div style={{ fontSize: '14.5px', color: 'var(--mb-text-muted)', letterSpacing: '0.01em' }}>
-            Free &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; No login required
+            {t.heroBadge}
           </div>
         </div>
       </section>
@@ -132,13 +161,13 @@ const Home = () => {
       {/* ============ HOW IT WORKS ============ */}
       <section id="how" style={{ maxWidth: '1600px', margin: '0 auto', padding: '104px 32px 96px' }}>
         <div style={{ maxWidth: '800px', margin: '0 0 64px' }}>
-          <div style={{ ...label, marginBottom: '16px' }}>How it works</div>
+          <div style={{ ...label, marginBottom: '16px' }}>{t.howLabel}</div>
           <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: 0, textWrap: 'balance' }}>
-            Three simple steps to care you can afford.
+            {t.howTitle}
           </h2>
         </div>
         <div className="how-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '48px' }}>
-          {STEPS.map((step) => (
+          {t.steps.map((step) => (
             <div key={step.n} style={{ borderTop: `2px solid ${step.color}`, paddingTop: '24px' }}>
               <div style={{ fontSize: '54px', fontWeight: 600, color: step.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '18px' }}>
                 {step.n}
@@ -154,15 +183,15 @@ const Home = () => {
       <section id="cost" style={{ background: 'var(--mb-true-lime-soft)' }}>
         <div className="cost-grid" style={{ maxWidth: '1600px', margin: '0 auto', padding: '96px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '72px', alignItems: 'center' }}>
           <div>
-            <div style={{ ...label, marginBottom: '16px' }}>Cost &amp; eligibility</div>
+            <div style={{ ...label, marginBottom: '16px' }}>{t.costLabel}</div>
             <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', margin: '0 0 20px', lineHeight: 1.1, textWrap: 'balance' }}>
-              You probably qualify — and you won't pay full price.
+              {t.costTitle}
             </h2>
             <p style={{ fontSize: '20px', lineHeight: 1.62, color: '#41504A', margin: '0 0 32px', maxWidth: '480px' }}>
-              Sliding-scale clinics set your fee based on what you earn and how many people you support. Many visits cost very little, and some are free.
+              {t.costSub}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {ELIGIBILITY.map((item) => (
+              {t.eligibility.map((item) => (
                 <div key={item.title} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                   <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--mb-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
                     <Check size={14} />
@@ -179,15 +208,15 @@ const Home = () => {
           {/* Estimate card */}
           <div style={{ background: 'var(--mb-bg-surface)', border: '1px solid var(--mb-border)', borderRadius: '22px', padding: '32px', boxShadow: 'var(--mb-shadow-lg)' }}>
             <div style={{ fontSize: '15px', color: 'var(--mb-text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>
-              Estimate · household of 3
+              {t.estimateLabel}
             </div>
-            <div style={{ fontSize: '17px', color: 'var(--mb-text-secondary)', marginBottom: '26px' }}>A primary-care visit on a sliding scale</div>
+            <div style={{ fontSize: '17px', color: 'var(--mb-text-secondary)', marginBottom: '26px' }}>{t.estimateSub}</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ height: '112px', background: '#F4F1EA', border: '1px solid var(--mb-border-soft)', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: '32px', fontWeight: 600, color: 'var(--mb-text-disabled)', textDecoration: 'line-through' }}>$180</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-text-muted)', marginTop: '11px' }}>Full price</div>
+                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-text-muted)', marginTop: '11px' }}>{t.fullPrice}</div>
               </div>
               <div style={{ fontSize: '22px', color: '#C9C2B2', paddingBottom: '42px' }}>→</div>
               <div style={{ flex: 1 }}>
@@ -195,11 +224,11 @@ const Home = () => {
                   <span style={{ fontSize: '32px', fontWeight: 600, color: 'var(--mb-primary)', letterSpacing: '-0.02em' }}>$25</span>
                   <span style={{ fontSize: '11px', color: 'var(--mb-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>Lowest tier</span>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-primary)', fontWeight: 600, marginTop: '11px' }}>What you'd likely pay</div>
+                <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--mb-primary)', fontWeight: 600, marginTop: '11px' }}>{t.likelyPay}</div>
               </div>
             </div>
             <div style={{ background: 'var(--mb-honey-soft)', borderRadius: '13px', padding: '14px 16px', marginTop: '22px', fontSize: '13.5px', lineHeight: 1.55, color: 'var(--mb-honey-soft-ink)' }}>
-              Your actual fee depends on income and household size. We'll show your likely tier before you ever call.
+              {t.estimateNote}
             </div>
           </div>
         </div>
@@ -208,19 +237,19 @@ const Home = () => {
       {/* ============ PRIVACY ============ */}
       <section id="privacy" style={{ maxWidth: '1600px', margin: '0 auto', padding: '104px 32px 96px' }}>
         <div style={{ maxWidth: '800px', margin: '0 0 60px' }}>
-          <div style={{ ...label, marginBottom: '16px' }}>Private by design</div>
+          <div style={{ ...label, marginBottom: '16px' }}>{t.privacyLabel}</div>
           <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.08, margin: '0 0 14px', textWrap: 'balance' }}>
-            Your information stays yours.
+            {t.privacyTitle}
           </h2>
           <p style={{ fontSize: '20px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>
-            Look for help without worrying about who's watching.
+            {t.privacySub}
           </p>
         </div>
         <div className="privacy-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '44px' }}>
-          {PRIVACY.map((item) => (
+          {t.privacy.map((item, idx) => (
             <div key={item.title} style={{ borderTop: '1px solid var(--mb-border-soft)', paddingTop: '26px' }}>
               <div style={{ width: '46px', height: '46px', borderRadius: '13px', background: 'var(--mb-true-lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                {item.icon}
+                {PRIVACY_ICONS[idx]}
               </div>
               <h3 style={{ fontSize: '22px', fontWeight: 600, margin: '0 0 9px' }}>{item.title}</h3>
               <p style={{ fontSize: '18px', lineHeight: 1.6, color: 'var(--mb-text-secondary)', margin: 0 }}>{item.body}</p>
@@ -232,11 +261,11 @@ const Home = () => {
       {/* ============ FAQ ============ */}
       <section id="faq" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px 96px' }}>
         <div style={{ margin: '0 0 40px' }}>
-          <div style={{ ...label, marginBottom: '16px' }}>Real questions, real answers</div>
-          <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>The things people actually ask.</h2>
+          <div style={{ ...label, marginBottom: '16px' }}>{t.faqLabel}</div>
+          <h2 style={{ fontSize: '48px', fontWeight: 600, letterSpacing: '-0.025em', margin: 0 }}>{t.faqTitle}</h2>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {FAQS.map((item, i) => {
+          {t.faqs.map((item, i) => {
             const open = openIndex === i;
             return (
               <div key={item.q} style={{ background: 'var(--mb-bg-surface)', border: '1px solid var(--mb-border)', borderRadius: '16px', overflow: 'hidden' }}>
@@ -284,10 +313,10 @@ const Home = () => {
           <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '180px', height: '180px', borderRadius: '50%', background: 'var(--mb-secondary)', opacity: 0.35 }} />
           <div style={{ position: 'relative' }}>
             <h2 style={{ fontSize: '44px', fontWeight: 600, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 14px', lineHeight: 1.12, textWrap: 'balance' }}>
-              Ready when you are. It takes about two minutes.
+              {t.ctaTitle}
             </h2>
             <p style={{ fontSize: '20px', lineHeight: 1.55, color: '#C2E4D9', margin: 0 }}>
-              No login, no insurance, no pressure. Find the care and medicine you can afford.
+              {t.ctaSub}
             </p>
           </div>
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
@@ -297,7 +326,7 @@ const Home = () => {
               className="mb-btn mb-btn-lime"
               style={{ height: '58px', padding: '0 30px', borderRadius: '13px', fontSize: '17px' }}
             >
-              Find care near me <span style={{ fontSize: '19px' }}>→</span>
+              {t.heroCta} <span style={{ fontSize: '19px' }}>→</span>
             </button>
           </div>
         </div>

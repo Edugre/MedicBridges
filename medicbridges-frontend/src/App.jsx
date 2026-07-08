@@ -19,33 +19,37 @@ import Navbar from './layout/Navbar';
 import Footer from './layout/Footer';
 import SearchOptionsModal from './components/SearchOptionsModal';
 import { SearchModalProvider } from './context/SearchModalContext';
+import { LangProvider } from './context/LangContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <SearchModalProvider>
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <Navbar />
-          <main style={{ flex: 1 }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/clinic/:id" element={<Clinic />} />
-              <Route path="/clinic-signup" element={<ClinicSignup />} />
-              <Route path="/for-clinics" element={<ForClinics />} />
-              <Route path="/historias" element={<Historias />} />
-              <Route path="/map" element={<MapPage />} />
-              <Route path="/patient-signup" element={<PatientSignup />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/problem" element={<Problem />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-        <SearchOptionsModal />
-      </SearchModalProvider>
+      <LangProvider>
+        <SearchModalProvider>
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Navbar />
+            <main style={{ flex: 1 }}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/clinic/:id" element={<Clinic />} />
+                <Route path="/clinic-signup" element={<ClinicSignup />} />
+                <Route path="/for-clinics" element={<ForClinics />} />
+                <Route path="/historias" element={<Historias />} />
+                <Route path="/map" element={<MapPage />} />
+                <Route path="/patient-signup" element={<PatientSignup />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/problem" element={<Problem />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+          <SearchOptionsModal />
+        </SearchModalProvider>
+      </LangProvider>
     </BrowserRouter>
   );
 }
 
 export default App;
+

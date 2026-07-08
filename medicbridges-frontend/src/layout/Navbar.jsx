@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useSearchModal } from '../context/SearchModalContext';
+import { useLang } from '../context/LangContext';
 
 const navLinkStyle = {
   fontSize: '18px',
@@ -25,6 +26,7 @@ const NAV_LINKS = [
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openModal } = useSearchModal();
+  const { lang, setLang } = useLang();
 
   return (
     <header
@@ -74,8 +76,14 @@ const Navbar = () => {
         {/* Right cluster */}
         <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#F1ECE0', borderRadius: '999px', padding: '3px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)', background: '#fff', borderRadius: '999px', padding: '4px 12px' }}>EN</span>
-            <span style={{ fontSize: '15px', fontWeight: 500, color: 'var(--mb-text-muted)', padding: '4px 12px', cursor: 'pointer' }}>ES</span>
+            <span
+              onClick={() => setLang('en')}
+              style={{ fontSize: '15px', fontWeight: 600, cursor: 'pointer', borderRadius: '999px', padding: '4px 12px', transition: 'all 0.2s', background: lang === 'en' ? '#fff' : 'transparent', color: lang === 'en' ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)' }}
+            >EN</span>
+            <span
+              onClick={() => setLang('es')}
+              style={{ fontSize: '15px', fontWeight: 600, cursor: 'pointer', borderRadius: '999px', padding: '4px 12px', transition: 'all 0.2s', background: lang === 'es' ? '#fff' : 'transparent', color: lang === 'es' ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)' }}
+            >ES</span>
           </div>
           <button
             type="button"
