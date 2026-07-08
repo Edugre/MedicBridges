@@ -1,24 +1,103 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Plus, Minus, LocateFixed, RotateCw } from 'lucide-react';
+import { directionsUrl } from '../lib/format';
 
 const TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 if (TOKEN) {
   mapboxgl.accessToken = TOKEN;
 }
 
-function createMarkerElement(isSelected) {
+const DEFAULT_PADDING = { top: 90, bottom: 70, left: 60, right: 70 };
+
+function createMarkerElement(label, isSelected) {
   const el = document.createElement('button');
   el.type = 'button';
-  el.className = `search-map-marker${isSelected ? ' search-map-marker--selected' : ''}`;
-  el.setAttribute('aria-label', 'Clinic location');
+  el.className = `mb-fee-pin${isSelected ? ' mb-fee-pin--selected' : ''}`;
+  el.setAttribute('aria-label', label ? `Clinic — ${label}` : 'Clinic location');
+  el.textContent = label || '';
   return el;
 }
 
-const SearchMap = ({ center, sites, selectedSiteId, onSiteSelect }) => {
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+  ));
+}
+
+function buildPopupHtml(site) {
+  const badges = [];
+  if (site.has340b) {
+    badges.push('<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#FAEEDA;color:#B87814;border:1px solid #F2E0C2">340B meds</span>');
+  }
+  if (site.sliding) {
+    badges.push('<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#E1F5EE;color:#0F6E56">Sliding scale</span>');
+  }
+  const badgeRow = badges.length
+    ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${badges.join('')}</div>`
+    : '';
+  const distance = site.distanceLabel
+    ? `<div style="font-size:13px;font-weight:600;color:#0F6E56;white-space:nowrap">${esc(site.distanceLabel)}</div>`
+    : '';
+  const address = site.address
+    ? `<div style="color:#5A655F;font-size:12.5px;margin-top:3px">${esc(site.address)}</div>`
+    : '';
+  const call = site.phone
+    ? `<a href="tel:${esc(site.phone)}" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:1px solid #E6E1D6;background:#fff;color:#25302E">Call</a>`
+    : '';
+  const dir = site.directions
+    ? `<a href="${esc(site.directions)}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:none;background:#0F6E56;color:#fff">Directions</a>`
+    : '';
+  const actions = call || dir
+    ? `<div style="display:flex;gap:8px;margin-top:12px">${call}${dir}</div>`
+    : '';
+
+  return `
+    <div style="width:250px">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="min-width:0">
+          <div style="font-size:15px;font-weight:600;color:#25302E;line-height:1.25">${esc(site.name || 'Clinic')}</div>
+          ${address}
+        </div>
+        ${distance}
+      </div>
+      ${badgeRow}
+      ${actions}
+    </div>`;
+}
+
+const CTRL_BTN = {
+  width: '38px',
+  height: '38px',
+  borderRadius: '11px',
+  background: '#fff',
+  border: '1px solid var(--mb-border)',
+  boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  color: 'var(--mb-text-primary)',
+  padding: 0,
+};
+
+const SearchMap = ({
+  center,
+  sites,
+  selectedSiteId,
+  onSiteSelect,
+  onSearchArea,
+  onLocate,
+  fitPadding,
+  pillLeftInset = 0,
+}) => {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  const popupRef = useRef(null);
+  const suppressClose = useRef(false);
+  const [showSearchArea, setShowSearchArea] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !TOKEN) return undefined;
@@ -31,12 +110,19 @@ const SearchMap = ({ center, sites, selectedSiteId, onSiteSelect }) => {
       attributionControl: true,
     });
 
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    // Show "Search this area" only after a user-initiated pan/zoom
+    // (programmatic moves such as flyTo/fitBounds carry no originalEvent).
+    map.on('moveend', (e) => {
+      if (e.originalEvent) setShowSearchArea(true);
+    });
+
     mapRef.current = map;
 
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
+      popupRef.current?.remove();
+      popupRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -66,7 +152,7 @@ const SearchMap = ({ center, sites, selectedSiteId, onSiteSelect }) => {
       if (lat == null || lon == null) continue;
 
       const siteId = `${site.orgId}:${site.siteId}`;
-      const el = createMarkerElement(siteId === selectedSiteId);
+      const el = createMarkerElement(site.label, siteId === selectedSiteId);
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         onSiteSelect?.(siteId);
@@ -82,9 +168,67 @@ const SearchMap = ({ center, sites, selectedSiteId, onSiteSelect }) => {
     }
 
     if (markerCount > 0) {
-      map.fitBounds(bounds, { padding: 72, maxZoom: 14, duration: 600 });
+      map.fitBounds(bounds, { padding: fitPadding || DEFAULT_PADDING, maxZoom: 14, duration: 600 });
+      setShowSearchArea(false);
     }
-  }, [sites, center.lat, center.lon, selectedSiteId, onSiteSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sites, center.lat, center.lon]);
+
+  // Keep marker selection styling in sync without rebuilding all markers.
+  useEffect(() => {
+    for (const marker of markersRef.current) {
+      const el = marker.getElement();
+      const lngLat = marker.getLngLat();
+      const match = sites.find(
+        (s) => s.longitude === lngLat.lng && s.latitude === lngLat.lat && `${s.orgId}:${s.siteId}` === selectedSiteId,
+      );
+      el.classList.toggle('mb-fee-pin--selected', Boolean(match));
+    }
+  }, [selectedSiteId, sites]);
+
+  // Selected-clinic popup.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !TOKEN) return;
+
+    if (popupRef.current) {
+      suppressClose.current = true;
+      popupRef.current.remove();
+      popupRef.current = null;
+      suppressClose.current = false;
+    }
+
+    if (!selectedSiteId) return;
+    const site = sites.find((s) => `${s.orgId}:${s.siteId}` === selectedSiteId);
+    if (!site || site.latitude == null || site.longitude == null) return;
+
+    const popup = new mapboxgl.Popup({
+      offset: 26,
+      closeButton: true,
+      closeOnClick: false,
+      className: 'mb-map-popup',
+      maxWidth: '280px',
+      anchor: 'bottom',
+    })
+      .setLngLat([site.longitude, site.latitude])
+      .setHTML(buildPopupHtml({ ...site, directions: site.directions || directionsUrl(site) }))
+      .addTo(map);
+
+    popup.on('close', () => {
+      if (!suppressClose.current) onSiteSelect?.(null);
+    });
+
+    popupRef.current = popup;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSiteId, sites]);
+
+  function handleSearchArea() {
+    const map = mapRef.current;
+    if (!map) return;
+    const c = map.getCenter();
+    setShowSearchArea(false);
+    onSearchArea?.({ lat: c.lat, lon: c.lng });
+  }
 
   if (!TOKEN) {
     return (
@@ -107,7 +251,68 @@ const SearchMap = ({ center, sites, selectedSiteId, onSiteSelect }) => {
     );
   }
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+
+      {/* Search this area */}
+      {showSearchArea && (
+        <div
+          className="mb-searcharea-wrap"
+          style={{
+            position: 'absolute',
+            top: '18px',
+            left: pillLeftInset,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleSearchArea}
+            style={{
+              pointerEvents: 'auto',
+              background: '#fff',
+              border: '1px solid var(--mb-border)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+              borderRadius: 'var(--mb-radius-pill)',
+              padding: '9px 16px',
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--mb-primary)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '7px',
+              cursor: 'pointer',
+            }}
+          >
+            <RotateCw size={15} /> Search this area
+          </button>
+        </div>
+      )}
+
+      {/* Zoom + locate */}
+      <div style={{ position: 'absolute', right: '16px', bottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 5 }}>
+        <button type="button" aria-label="Zoom in" style={CTRL_BTN} onClick={() => mapRef.current?.zoomIn()}>
+          <Plus size={18} />
+        </button>
+        <button type="button" aria-label="Zoom out" style={CTRL_BTN} onClick={() => mapRef.current?.zoomOut()}>
+          <Minus size={18} />
+        </button>
+        <button
+          type="button"
+          aria-label="Use my location"
+          style={{ ...CTRL_BTN, marginTop: '4px', color: 'var(--mb-primary)' }}
+          onClick={() => onLocate?.()}
+        >
+          <LocateFixed size={18} />
+        </button>
+      </div>
+    </div>
+  );
 };
 
 export default SearchMap;

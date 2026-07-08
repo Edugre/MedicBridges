@@ -1,13 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search as SearchIcon, MapPin, SlidersHorizontal, Navigation, AlertCircle, X } from 'lucide-react';
+import {
+  Search as SearchIcon,
+  MapPin,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 import { searchNearby, listServices } from '../../api';
 import { useGeolocation } from '../../hooks/useGeolocation';
-import { humanizeCategory } from '../../lib/format';
+import { humanizeCategory, formatAddress, formatDistance, directionsUrl } from '../../lib/format';
 import ClinicCard from '../../components/ClinicCard';
 import SearchMap from '../../components/SearchMap';
 import SearchLoadingModal from '../../components/SearchLoadingModal';
 
 const RADIUS_OPTIONS = [1, 2, 5, 10, 20];
+const MOBILE_QUERY = '(max-width: 900px)';
 
 const Search = () => {
   const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
@@ -21,12 +31,26 @@ const Search = () => {
   });
   const [textQuery, setTextQuery] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [radiusMenuOpen, setRadiusMenuOpen] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState(null);
+
+  const [drawerCollapsed, setDrawerCollapsed] = useState(false);
+  const [mobileView, setMobileView] = useState('map');
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches,
+  );
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const onChange = (e) => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
 
   const categories = useMemo(() => {
     const set = new Set(services.map((s) => s.category).filter(Boolean));
@@ -50,13 +74,23 @@ const Search = () => {
   }, [data, textQuery]);
 
   const mapSites = useMemo(
-    () => clinics.map(({ org, site }) => ({
-      orgId: org.org_id,
-      siteId: site.site_id,
-      latitude: site.latitude,
-      longitude: site.longitude,
-      name: site.name || org.name,
-    })),
+    () => clinics.map(({ org, site }) => {
+      const distLabel = formatDistance(site.distance_m ?? org.distance_m);
+      return {
+        orgId: org.org_id,
+        siteId: site.site_id,
+        latitude: site.latitude,
+        longitude: site.longitude,
+        name: site.name || org.name,
+        label: distLabel || (site.accepts_sliding_scale ? 'Sliding' : 'Clinic'),
+        address: formatAddress(site),
+        distanceLabel: distLabel,
+        phone: site.phone,
+        has340b: !!org.has_340b,
+        sliding: !!site.accepts_sliding_scale,
+        directions: directionsUrl(site),
+      };
+    }),
     [clinics],
   );
 
@@ -69,7 +103,7 @@ const Search = () => {
     return count;
   }, [filters]);
 
-  async function runSearch(center = coords) {
+  async function runSearch(center = coords, f = filters) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -79,10 +113,10 @@ const Search = () => {
       const result = await searchNearby({
         lat: center.lat,
         lon: center.lon,
-        radiusKm: filters.radiusKm,
-        serviceCategories: filters.serviceCategory ? [filters.serviceCategory] : undefined,
-        acceptsSlidingScale: filters.slidingScale || undefined,
-        has340b: filters.has340b || undefined,
+        radiusKm: f.radiusKm,
+        serviceCategories: f.serviceCategory ? [f.serviceCategory] : undefined,
+        acceptsSlidingScale: f.slidingScale || undefined,
+        has340b: f.has340b || undefined,
         signal: controller.signal,
       });
       setData(result);
@@ -119,117 +153,401 @@ const Search = () => {
     setTextQuery('');
   }
 
+  // Toggle a quick filter and re-run immediately with the new filters.
+  function toggleFilter(patch) {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    runSearch(coords, next);
+  }
+
   function handleApplyFilters() {
     setFiltersOpen(false);
     runSearch();
   }
 
+  function handleRadiusSelect(km) {
+    setRadiusMenuOpen(false);
+    const next = { ...filters, radiusKm: km };
+    setFilters(next);
+    runSearch(coords, next);
+  }
+
   const desert = data?.meta?.healthcare_desert;
   const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : 'your area');
 
-  return (
-    <div className="search-page" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 74px)', animation: 'fadeIn 0.4s ease-out forwards' }}>
-      <SearchLoadingModal open={loading} onCancel={() => abortRef.current?.abort()} />
-      {/* Top toolbar */}
-      <div style={{ flexShrink: 0, borderBottom: '1px solid var(--mb-border)', background: 'var(--mb-bg-primary)', zIndex: 10 }}>
-        <div style={{ padding: '1rem 1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-            <h1 style={{ fontSize: '1.35rem', margin: 0, lineHeight: 1.2 }}>Find Care near {locationLabel}</h1>
-            <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.9rem', margin: '0.2rem 0 0' }}>
-              {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found`}
-            </p>
-          </div>
+  const fitPadding = isMobile
+    ? { top: 120, bottom: 290, left: 40, right: 40 }
+    : { top: 90, bottom: 70, left: drawerCollapsed ? 60 : 412, right: 70 };
+  const pillLeftInset = isMobile ? 0 : 392;
 
-          <form
-            className="search-bar"
-            style={{ display: 'flex', gap: '0.5rem', flex: '2 1 320px', minWidth: 'min(100%, 280px)' }}
-            onSubmit={(e) => e.preventDefault()}
-          >
-            <div style={{ position: 'relative', flex: 1 }}>
-              <SearchIcon size={18} color="var(--mb-text-muted)" style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                className="mb-input"
-                placeholder="Filter by name or service…"
-                value={textQuery}
-                onChange={(e) => setTextQuery(e.target.value)}
-                style={{ paddingLeft: '2.5rem', height: '42px', fontSize: '0.95rem' }}
-              />
-            </div>
-          </form>
-
-          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-            <button
-              type="button"
-              className="mb-btn mb-btn-outline"
-              onClick={() => setFiltersOpen((o) => !o)}
-              style={{ height: '42px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.95rem', position: 'relative' }}
-              aria-expanded={filtersOpen}
-            >
-              <SlidersHorizontal size={17} />
-              Filters
-              {activeFilterCount > 0 && (
-                <span style={{
-                  marginLeft: '2px',
-                  minWidth: '18px',
-                  height: '18px',
-                  padding: '0 5px',
-                  borderRadius: '999px',
-                  background: 'var(--mb-primary)',
-                  color: '#fff',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                >
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className="mb-btn mb-btn-outline"
-              onClick={handleUseLocation}
-              style={{ height: '42px', padding: '0 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.95rem', whiteSpace: 'nowrap' }}
-            >
-              <Navigation size={17} /> Location
-            </button>
-          </div>
+  // Shared results-list body (error / empty / cards).
+  function renderResults(carousel = false) {
+    if (error) {
+      return (
+        <div style={{ background: '#fff', border: '1px solid var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2rem 1.5rem' }}>
+          <AlertCircle size={34} color="var(--mb-text-muted)" style={{ marginBottom: '0.75rem' }} />
+          <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem' }}>Couldn't load clinics</h3>
+          <p style={{ color: 'var(--mb-text-muted)', marginBottom: '1rem', fontSize: '0.92rem' }}>{error}</p>
+          <button type="button" className="mb-btn mb-btn-lime" onClick={() => runSearch()}>Try again</button>
         </div>
-
-        {geoError && (
-          <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--mb-text-muted)', fontSize: '0.85rem', margin: '0 1.5rem 0.75rem' }}>
-            <AlertCircle size={14} /> {geoError}
+      );
+    }
+    if (!loading && clinics.length === 0) {
+      return (
+        <div style={{ background: '#fff', border: '1px dashed var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+          <MapPin size={36} color="var(--mb-border)" style={{ marginBottom: '0.75rem' }} />
+          <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem', color: 'var(--mb-text-muted)' }}>
+            {desert ? 'No clinics found nearby' : 'No clinics match your filters'}
+          </h3>
+          <p style={{ color: 'var(--mb-text-muted)', fontSize: '0.92rem' }}>
+            Try widening the search radius or clearing some filters.
           </p>
-        )}
+        </div>
+      );
+    }
+    return clinics.map(({ org, site }) => {
+      const siteKey = `${org.org_id}:${site.site_id}`;
+      return (
+        <ClinicCard
+          key={siteKey}
+          org={org}
+          site={site}
+          selected={selectedSiteId === siteKey}
+          onMouseEnter={() => setSelectedSiteId(siteKey)}
+          onMouseLeave={() => setSelectedSiteId((cur) => (cur === siteKey ? null : cur))}
+          width={carousel ? '270px' : undefined}
+        />
+      );
+    });
+  }
 
-        {/* Collapsible filters panel */}
-        {filtersOpen && (
+  const chip = (active, lead) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '7px 13px',
+    borderRadius: 'var(--mb-radius-pill)',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    background: active ? 'var(--mb-primary)' : '#fff',
+    border: `1px solid ${active || lead ? 'var(--mb-primary)' : 'var(--mb-border)'}`,
+    color: active ? '#fff' : lead ? 'var(--mb-primary)' : 'var(--mb-text-primary)',
+  });
+
+  const renderChips = () => (
+    <>
+      <button type="button" style={chip(false, true)} onClick={() => setFiltersOpen(true)}>
+        <SlidersHorizontal size={14} /> Filters
+        {activeFilterCount > 0 && ` (${activeFilterCount})`}
+      </button>
+      <button type="button" style={chip(filters.slidingScale)} onClick={() => toggleFilter({ slidingScale: !filters.slidingScale })}>
+        Sliding scale
+      </button>
+      <button type="button" style={chip(filters.has340b)} onClick={() => toggleFilter({ has340b: !filters.has340b })}>
+        340B meds
+      </button>
+      <div style={{ position: 'relative' }}>
+        <button type="button" style={chip(filters.radiusKm !== 20)} onClick={() => setRadiusMenuOpen((o) => !o)}>
+          Within {filters.radiusKm} km <ChevronDown size={13} strokeWidth={2.2} />
+        </button>
+        {radiusMenuOpen && (
           <div
-            className="search-filters-panel"
             style={{
-              padding: '1rem 1.5rem 1.25rem',
-              borderTop: '1px solid var(--mb-border-soft)',
-              background: 'var(--mb-bg-surface)',
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              zIndex: 30,
+              background: '#fff',
+              border: '1px solid var(--mb-border)',
+              borderRadius: '12px',
+              boxShadow: 'var(--mb-shadow-lg)',
+              padding: '6px',
+              minWidth: '130px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <SlidersHorizontal size={18} /> Filter results
+            {RADIUS_OPTIONS.map((km) => (
+              <button
+                key={km}
+                type="button"
+                onClick={() => handleRadiusSelect(km)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '7px 10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: filters.radiusKm === km ? 'var(--mb-bg-sage)' : 'transparent',
+                  color: 'var(--mb-text-primary)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Within {km} km
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {categories.slice(0, 4).map((c) => {
+        const active = filters.serviceCategory === c;
+        return (
+          <button
+            key={c}
+            type="button"
+            style={chip(active)}
+            onClick={() => toggleFilter({ serviceCategory: active ? '' : c })}
+          >
+            {humanizeCategory(c)}
+          </button>
+        );
+      })}
+    </>
+  );
+
+  const searchField = (
+    <div style={{ position: 'relative' }}>
+      <SearchIcon size={16} color="var(--mb-text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+      <input
+        type="text"
+        placeholder="Filter by name or service"
+        value={textQuery}
+        onChange={(e) => setTextQuery(e.target.value)}
+        style={{
+          width: '100%',
+          height: '42px',
+          padding: '0 14px 0 38px',
+          border: '1px solid var(--mb-border)',
+          borderRadius: '13px',
+          background: '#fff',
+          fontSize: '14px',
+          color: 'var(--mb-text-primary)',
+          outline: 'none',
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <div className="search-page" style={{ position: 'relative', height: 'calc(100vh - 74px)', overflow: 'hidden' }}>
+      <SearchLoadingModal open={loading} onCancel={() => abortRef.current?.abort()} />
+
+      {/* Base map layer */}
+      <div style={{ position: 'absolute', inset: 0 }}>
+        <SearchMap
+          center={coords}
+          sites={mapSites}
+          selectedSiteId={selectedSiteId}
+          onSiteSelect={setSelectedSiteId}
+          onSearchArea={(c) => runSearch(c)}
+          onLocate={handleUseLocation}
+          fitPadding={fitPadding}
+          pillLeftInset={pillLeftInset}
+        />
+      </div>
+
+      {/* ===== Desktop left drawer ===== */}
+      {!isMobile && (
+        <>
+          <div
+            className="search-drawer"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '392px',
+              background: 'var(--mb-bg-primary)',
+              borderRight: '1px solid var(--mb-border)',
+              boxShadow: '6px 0 24px rgba(0,0,0,0.05)',
+              zIndex: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              transform: drawerCollapsed ? 'translateX(-100%)' : 'translateX(0)',
+              transition: 'transform 0.28s ease',
+            }}
+          >
+            <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid var(--mb-border-soft)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--mb-text-primary)', letterSpacing: '-0.01em', margin: 0 }}>
+                Find care near {locationLabel}
               </h2>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button type="button" onClick={resetFilters} style={{ background: 'none', border: 'none', color: 'var(--mb-text-muted)', cursor: 'pointer', fontSize: '0.9rem' }}>
-                  Reset all
-                </button>
-                <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters" style={{ background: 'none', border: 'none', color: 'var(--mb-text-muted)', cursor: 'pointer', padding: '0.25rem' }}>
-                  <X size={20} />
-                </button>
+              <div style={{ fontSize: '12.5px', color: 'var(--mb-text-muted)', marginTop: '2px' }}>
+                {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found · sorted by distance`}
+              </div>
+              <div style={{ marginTop: '12px' }}>{searchField}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '12px' }}>
+                {renderChips()}
+              </div>
+              {geoError && (
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--mb-text-muted)', fontSize: '0.8rem', margin: '10px 0 0' }}>
+                  <AlertCircle size={13} /> {geoError}
+                </p>
+              )}
+            </div>
+            <div className="mb-noscroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {renderResults()}
+            </div>
+          </div>
+
+          {/* Collapse handle */}
+          <button
+            type="button"
+            aria-label={drawerCollapsed ? 'Show results' : 'Hide results'}
+            onClick={() => setDrawerCollapsed((c) => !c)}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: drawerCollapsed ? '0px' : '377px',
+              transform: 'translateY(-50%)',
+              width: '30px',
+              height: '44px',
+              borderRadius: '8px',
+              background: '#fff',
+              border: '1px solid var(--mb-border)',
+              boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+              color: 'var(--mb-text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 21,
+              transition: 'left 0.28s ease',
+            }}
+          >
+            {drawerCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </>
+      )}
+
+      {/* ===== Mobile layout ===== */}
+      {isMobile && (
+        <>
+          {/* Floating search + filters button */}
+          <div style={{ position: 'absolute', top: '14px', left: '14px', right: '14px', display: 'flex', gap: '8px', zIndex: 25 }}>
+            <div style={{ flex: 1, boxShadow: '0 4px 14px rgba(0,0,0,0.1)', borderRadius: '13px' }}>{searchField}</div>
+            <button
+              type="button"
+              aria-label="Filters"
+              onClick={() => setFiltersOpen(true)}
+              style={{
+                width: '42px',
+                height: '42px',
+                flexShrink: 0,
+                borderRadius: '11px',
+                background: '#fff',
+                border: '1px solid var(--mb-primary)',
+                color: 'var(--mb-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                cursor: 'pointer',
+              }}
+            >
+              <SlidersHorizontal size={16} />
+            </button>
+          </div>
+
+          {/* Horizontal chip row */}
+          <div
+            className="mb-noscroll"
+            style={{ position: 'absolute', top: '66px', left: 0, right: 0, display: 'flex', gap: '7px', padding: '0 14px', overflowX: 'auto', zIndex: 24 }}
+          >
+            {renderChips()}
+          </div>
+
+          {/* Bottom sheet */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              maxHeight: mobileView === 'list' ? '72%' : 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#fff',
+              borderRadius: '22px 22px 0 0',
+              boxShadow: '0 -8px 30px rgba(0,0,0,0.13)',
+              zIndex: 15,
+              paddingBottom: '10px',
+            }}
+          >
+            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '10px auto 8px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px 10px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)' }}>
+                {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found`}
+              </div>
+              <div style={{ background: '#F1ECE0', borderRadius: '999px', padding: '3px', display: 'flex', gap: '2px' }}>
+                {['map', 'list'].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setMobileView(v)}
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      padding: '4px 11px',
+                      borderRadius: '999px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textTransform: 'capitalize',
+                      background: mobileView === v ? '#fff' : 'transparent',
+                      color: mobileView === v ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)',
+                    }}
+                  >
+                    {v}
+                  </button>
+                ))}
               </div>
             </div>
+            {mobileView === 'list' ? (
+              <div className="mb-noscroll" style={{ overflowY: 'auto', padding: '0 16px 6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {renderResults()}
+              </div>
+            ) : (
+              <div className="mb-noscroll" style={{ display: 'flex', gap: '12px', padding: '0 16px 6px', overflowX: 'auto' }}>
+                {renderResults(true)}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
-            <div className="search-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', alignItems: 'end' }}>
+      {/* ===== Filter editor (popover / sheet) ===== */}
+      {filtersOpen && (
+        <div
+          role="presentation"
+          onClick={() => setFiltersOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(37,48,46,0.35)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : '24px' }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filter results"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              width: isMobile ? '100%' : '420px',
+              maxWidth: '100%',
+              borderRadius: isMobile ? '22px 22px 0 0' : '20px',
+              boxShadow: 'var(--mb-shadow-lg)',
+              padding: '22px 22px 24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <SlidersHorizontal size={18} /> Filter results
+              </h2>
+              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters" style={{ background: 'none', border: 'none', color: 'var(--mb-text-muted)', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label className="mb-label">Service type</label>
                 <select className="mb-select" value={filters.serviceCategory} onChange={(e) => setFilters((f) => ({ ...f, serviceCategory: e.target.value }))}>
@@ -239,7 +557,6 @@ const Search = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="mb-label">Search radius</label>
                 <select className="mb-select" value={filters.radiusKm} onChange={(e) => setFilters((f) => ({ ...f, radiusKm: Number(e.target.value) }))}>
@@ -248,8 +565,7 @@ const Search = () => {
                   ))}
                 </select>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingBottom: '0.35rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 <label className="mb-checkbox-label" style={{ marginBottom: 0 }}>
                   <input type="checkbox" checked={filters.slidingScale} onChange={(e) => setFilters((f) => ({ ...f, slidingScale: e.target.checked }))} />
                   Sliding-scale fees
@@ -259,107 +575,28 @@ const Search = () => {
                   On-site 340B medications
                 </label>
               </div>
+            </div>
 
-              <div>
-                <button type="button" className="mb-btn mb-btn-lime" style={{ width: '100%', height: '46px' }} onClick={handleApplyFilters} disabled={loading}>
-                  {loading ? 'Searching…' : 'Apply filters'}
-                </button>
-              </div>
+            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.5rem' }}>
+              <button type="button" className="mb-btn mb-btn-outline" style={{ flex: 1, height: '46px' }} onClick={resetFilters}>
+                Reset all
+              </button>
+              <button type="button" className="mb-btn mb-btn-lime" style={{ flex: 1, height: '46px' }} onClick={handleApplyFilters} disabled={loading}>
+                {loading ? 'Searching…' : 'Apply filters'}
+              </button>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Split: list (40%) + map (60%) */}
-      <div className="search-split" style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <aside
-          className="search-list-panel"
-          style={{
-            width: '40%',
-            flexShrink: 0,
-            overflowY: 'auto',
-            borderRight: '1px solid var(--mb-border)',
-            background: 'var(--mb-bg-primary)',
-            padding: '1rem 1.25rem',
-          }}
-        >
-          {error && (
-            <div className="mb-bento-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-              <AlertCircle size={36} color="var(--mb-text-muted)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Couldn't load clinics</h3>
-              <p style={{ color: 'var(--mb-text-muted)', marginBottom: '1.25rem', fontSize: '0.95rem' }}>{error}</p>
-              <button type="button" className="mb-btn mb-btn-lime" onClick={() => runSearch()}>Try again</button>
-            </div>
-          )}
-
-          {!error && !loading && clinics.length === 0 && (
-            <div className="mb-bento-card" style={{ textAlign: 'center', padding: '3rem 1.5rem', borderStyle: 'dashed' }}>
-              <MapPin size={40} color="var(--mb-border)" style={{ marginBottom: '1rem' }} />
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--mb-text-muted)' }}>
-                {desert ? 'No clinics found nearby' : 'No clinics match your filters'}
-              </h3>
-              <p style={{ color: 'var(--mb-text-muted)', fontSize: '0.95rem' }}>
-                Try widening the search radius or clearing some filters.
-              </p>
-            </div>
-          )}
-
-          {!error && clinics.map(({ org, site }) => {
-            const siteKey = `${org.org_id}:${site.site_id}`;
-            return (
-              <div
-                key={siteKey}
-                onMouseEnter={() => setSelectedSiteId(siteKey)}
-                onMouseLeave={() => setSelectedSiteId(null)}
-                style={{
-                  borderRadius: 'var(--mb-radius-xl)',
-                  outline: selectedSiteId === siteKey ? '2px solid var(--mb-primary)' : '2px solid transparent',
-                  transition: 'outline-color 0.15s ease',
-                }}
-              >
-                <ClinicCard org={org} site={site} />
-              </div>
-            );
-          })}
-        </aside>
-
-        <div className="search-map-panel" style={{ width: '60%', flexShrink: 0, position: 'relative', minHeight: 0 }}>
-          <SearchMap
-            center={coords}
-            sites={mapSites}
-            selectedSiteId={selectedSiteId}
-            onSiteSelect={setSelectedSiteId}
-          />
         </div>
-      </div>
+      )}
 
       <style>{`
+        .mb-noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .mb-noscroll::-webkit-scrollbar { display: none; }
         @media (max-width: 900px) {
-          .search-split {
-            flex-direction: column !important;
-          }
-          .search-list-panel {
-            width: 100% !important;
-            max-height: 45vh;
-            border-right: none !important;
-            border-bottom: 1px solid var(--mb-border);
-          }
-          .search-map-panel {
-            width: 100% !important;
-            flex: 1 !important;
-            min-height: 280px !important;
-          }
-          .search-filters-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
+          .mb-searcharea-wrap { display: none !important; }
         }
-        @media (max-width: 600px) {
-          .search-filters-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .search-bar {
-            flex: 1 1 100% !important;
-          }
+        @media (prefers-reduced-motion: reduce) {
+          .search-drawer { transition: none !important; }
         }
       `}</style>
     </div>

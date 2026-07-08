@@ -155,6 +155,50 @@
   background: var(--mb-honey);
 }
 
+/* Fee-label pill markers (map-first search redesign) */
+.mb-fee-pin {
+  transform: translate(-50%, -100%);
+  background: var(--mb-primary);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: var(--mb-radius-pill);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(15, 110, 86, 0.4);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mb-fee-pin--selected {
+  background: var(--mb-honey);
+  color: #3a2403;
+  box-shadow: 0 8px 22px rgba(239, 159, 39, 0.5);
+  transform: translate(-50%, -100%) scale(1.07);
+  z-index: 6;
+}
+
+.mb-map-popup .mapboxgl-popup-content {
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
+  padding: 14px 15px;
+  border: 1px solid var(--mb-border);
+}
+
+.mb-map-popup .mapboxgl-popup-close-button {
+  font-size: 18px;
+  color: var(--mb-text-muted);
+  padding: 2px 7px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-fee-pin {
+    transition: none;
+  }
+}
+
 /* Image Placeholder */
 .image-placeholder {
   background-image: repeating-linear-gradient(135deg, #EDE6D8 0, #EDE6D8 13px, #E6DECF 13px, #E6DECF 26px);

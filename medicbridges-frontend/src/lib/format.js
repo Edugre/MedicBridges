@@ -16,6 +16,15 @@ export function formatAddress(item) {
   return parts.join(', ');
 }
 
+/** Google Maps directions URL to a site (by coords when available, else address). */
+export function directionsUrl(item) {
+  if (item.latitude != null && item.longitude != null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`;
+  }
+  const addr = formatAddress(item);
+  return addr ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}` : null;
+}
+
 /** Title-case a service category slug like "mental_health" -> "Mental Health". */
 export function humanizeCategory(value) {
   if (!value) return '';
