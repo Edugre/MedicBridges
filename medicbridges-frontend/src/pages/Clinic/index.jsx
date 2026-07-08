@@ -93,23 +93,23 @@ const Clinic = () => {
 
               <div className="clinic-actions" style={{ display: 'flex', gap: '10px', marginTop: '22px', flexWrap: 'wrap' }}>
                 {directions && (
-                  <a className="abtn teal" href={directions} target="_blank" rel="noreferrer">
-                    <Send size={15} /> Get directions
+                  <a className="abtn teal abtn-directions" href={directions} target="_blank" rel="noreferrer">
+                    <Send size={15} /> <span className="abtn-label-full">Get directions</span><span className="abtn-label-short">Directions</span>
                   </a>
                 )}
                 {primary?.phone && (
-                  <a className="abtn" href={`tel:${primary.phone}`}>
-                    <Phone size={15} /> {primary.phone}
+                  <a className="abtn abtn-call" href={`tel:${primary.phone}`}>
+                    <Phone size={15} /> <span className="abtn-label-full">{primary.phone}</span><span className="abtn-label-short">Call</span>
                   </a>
                 )}
                 {website && (
-                  <a className="abtn" href={website} target="_blank" rel="noreferrer">
+                  <a className="abtn abtn-website" href={website} target="_blank" rel="noreferrer">
                     <Globe size={15} /> Website
                   </a>
                 )}
                 <button
                   type="button"
-                  className="abtn"
+                  className="abtn abtn-save"
                   aria-pressed={saved}
                   aria-label={saved ? 'Saved' : 'Save clinic'}
                   onClick={() => setSaved((s) => !s)}
@@ -264,8 +264,9 @@ const Clinic = () => {
           height: 44px; padding: 0 18px; border-radius: 12px;
           font-size: 14px; font-weight: 600; cursor: pointer;
           border: 1px solid var(--mb-border); background: var(--mb-bg-surface);
-          color: var(--mb-text-primary); text-decoration: none;
+          color: var(--mb-text-primary); text-decoration: none; white-space: nowrap;
         }
+        .abtn-label-short { display: none; }
         .abtn:hover { background: var(--mb-bg-surface-hover); color: var(--mb-text-primary); }
         .abtn.teal { background: var(--mb-primary); border-color: var(--mb-primary); color: #fff; }
         .abtn.teal:hover { background: var(--mb-primary-hover); color: #fff; }
@@ -325,9 +326,17 @@ const Clinic = () => {
           .clinic-hero { flex-direction: column; }
           .clinic-hero-body { order: 2; padding: 16px 15px 4px; }
           .clinic-map { order: 1; width: 100% !important; height: 170px; }
-          .clinic-actions .abtn { flex: 1; }
           .clinic-body { flex-direction: column; }
           .clinic-rail { width: 100%; }
+
+          /* Mobile hero actions: Directions + Call side-by-side, Website/Save wrap below */
+          .clinic-actions { gap: 9px; }
+          .abtn-label-full { display: none; }
+          .abtn-label-short { display: inline; }
+          .abtn-directions, .abtn-call, .abtn-website {
+            flex: 1 1 calc(50% - 5px); padding: 0 12px;
+          }
+          .abtn-save { flex: 0 0 44px; }
         }
       `}</style>
     </div>
