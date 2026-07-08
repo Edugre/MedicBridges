@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Search as SearchIcon,
   MapPin,
@@ -35,6 +35,7 @@ const Search = () => {
   const [selectedSiteId, setSelectedSiteId] = useState(null);
 
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [mobileView, setMobileView] = useState('map');
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches,
@@ -476,42 +477,63 @@ const Search = () => {
               paddingBottom: '10px',
             }}
           >
-            <div style={{ width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '10px auto 8px' }} />
+            <button
+              type="button"
+              onClick={() => setSheetCollapsed((c) => !c)}
+              aria-expanded={!sheetCollapsed}
+              aria-label={sheetCollapsed ? 'Show results' : 'Hide results'}
+              style={{ display: 'block', width: '100%', padding: '10px 0 8px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <span style={{ display: 'block', width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '0 auto' }} />
+            </button>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px 10px' }}>
               <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)' }}>
                 {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found`}
               </div>
-              <div style={{ background: '#F1ECE0', borderRadius: '999px', padding: '3px', display: 'flex', gap: '2px' }}>
-                {['map', 'list'].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setMobileView(v)}
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      padding: '4px 11px',
-                      borderRadius: '999px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textTransform: 'capitalize',
-                      background: mobileView === v ? '#fff' : 'transparent',
-                      color: mobileView === v ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)',
-                    }}
-                  >
-                    {v}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: '#F1ECE0', borderRadius: '999px', padding: '3px', display: 'flex', gap: '2px' }}>
+                  {['map', 'list'].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setMobileView(v)}
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        padding: '4px 11px',
+                        borderRadius: '999px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                        background: mobileView === v ? '#fff' : 'transparent',
+                        color: mobileView === v ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)',
+                      }}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSheetCollapsed((c) => !c)}
+                  aria-expanded={!sheetCollapsed}
+                  aria-label={sheetCollapsed ? 'Show results' : 'Hide results'}
+                  style={{ width: '30px', height: '30px', flexShrink: 0, borderRadius: '8px', background: '#F1ECE0', border: 'none', color: 'var(--mb-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <ChevronDown size={16} style={{ transform: sheetCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                </button>
               </div>
             </div>
-            {mobileView === 'list' ? (
-              <div className="mb-noscroll" style={{ overflowY: 'auto', padding: '0 16px 6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {renderResults()}
-              </div>
-            ) : (
-              <div className="mb-noscroll" style={{ display: 'flex', gap: '12px', padding: '0 16px 6px', overflowX: 'auto' }}>
-                {renderResults(true)}
-              </div>
+            {!sheetCollapsed && (
+              mobileView === 'list' ? (
+                <div className="mb-noscroll" style={{ overflowY: 'auto', padding: '0 16px 6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {renderResults()}
+                </div>
+              ) : (
+                <div className="mb-noscroll" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '0 16px 6px', overflowX: 'auto' }}>
+                  {renderResults(true)}
+                </div>
+              )
             )}
           </div>
         </>
