@@ -35,7 +35,7 @@ const Search = () => {
   const [selectedSiteId, setSelectedSiteId] = useState(null);
 
   const [drawerCollapsed, setDrawerCollapsed] = useState(false);
-  const [sheetCollapsed, setSheetCollapsed] = useState(true);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [mobileView, setMobileView] = useState('map');
   const sheetTouchY = useRef(null);
   const [isMobile, setIsMobile] = useState(
