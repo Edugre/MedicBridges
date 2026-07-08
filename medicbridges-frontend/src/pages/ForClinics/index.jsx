@@ -67,14 +67,6 @@ const ForClinics = () => {
         </div>
       </section>
 
-      {/* Image Placeholder */}
-      <section style={{ padding: '4rem 2rem' }}>
-         <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-            <div className="image-placeholder" style={{ minHeight: '400px' }}>
-              [Dashboard / UI Platform Screenshot]
-            </div>
-         </div>
-      </section>
 
       {/* Why MedicBridges */}
       <section style={{ padding: '6rem 2rem', backgroundColor: 'var(--mb-bg-primary)', position: 'relative' }}>
