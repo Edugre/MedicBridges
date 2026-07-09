@@ -27,6 +27,16 @@ function countSites(result) {
   return (result?.organizations || []).reduce((n, o) => n + (o.sites?.length || 0), 0);
 }
 
+// Key of the first site in the result set, matching the list's flatten order.
+function firstSiteKey(result) {
+  for (const org of result?.organizations || []) {
+    for (const site of org.sites || []) {
+      return `${org.org_id}:${site.site_id}`;
+    }
+  }
+  return null;
+}
+
 const Search = () => {
   const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
 
@@ -144,6 +154,7 @@ const Search = () => {
       }
       setData(result);
       setVisibleCount(PAGE_SIZE);
+      setSelectedSiteId(firstSiteKey(result)); // highlight the first (nearest) clinic
       if (radiusKm !== f.radiusKm && countSites(result) > 0) {
         setFilters((prev) => ({ ...prev, radiusKm }));
         setAutoExpanded({ from: f.radiusKm, to: radiusKm });
