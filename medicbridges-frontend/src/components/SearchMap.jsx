@@ -145,6 +145,15 @@ const SearchMap = ({
     const bounds = new mapboxgl.LngLatBounds();
     bounds.extend([center.lon, center.lat]);
 
+    // Distinct "you are here" marker at the search center.
+    const userEl = document.createElement('div');
+    userEl.className = 'mb-user-pin';
+    userEl.setAttribute('aria-label', 'Your location');
+    const userMarker = new mapboxgl.Marker({ element: userEl, anchor: 'center' })
+      .setLngLat([center.lon, center.lat])
+      .addTo(map);
+    markersRef.current.push(userMarker);
+
     let markerCount = 0;
     for (const site of sites) {
       const lat = site.latitude;

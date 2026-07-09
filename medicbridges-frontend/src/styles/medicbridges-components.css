@@ -180,6 +180,115 @@
   z-index: 6;
 }
 
+/* "You are here" marker — a blue dot with a pulsing halo, distinct from the
+   teal clinic fee pins. */
+.mb-user-pin {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2563EB;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.mb-user-pin::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.25);
+  animation: mb-user-pulse 2s ease-out infinite;
+}
+@keyframes mb-user-pulse {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* Single clinic location pin (teardrop) used on the clinic detail map. */
+.mb-clinic-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--mb-primary);
+  border: 2.5px solid #fff;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 10px rgba(15, 110, 86, 0.45);
+}
+
+/* Clinic detail location map + expand-to-modal */
+.clinic-map-btn {
+  position: relative;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+}
+.clinic-map-expand {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  color: var(--mb-text-primary);
+  border: 1px solid var(--mb-border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+.clinic-map-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(37, 48, 46, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeInOverlay 0.2s ease-out;
+}
+.clinic-map-modal-inner {
+  position: relative;
+  width: min(960px, 100%);
+  height: min(80vh, 720px);
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--mb-shadow-lg);
+}
+.clinic-map-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--mb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--mb-text-secondary);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+.clinic-map-dir {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mb-user-pin::before { animation: none; }
+}
+
 .mb-map-popup .mapboxgl-popup-content {
   border-radius: 16px;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
