@@ -1,5 +1,4 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Clinic from './pages/Clinic';
@@ -10,6 +9,7 @@ import MapPage from './pages/Map';
 import PatientSignup from './pages/PatientSignup';
 import Privacy from './pages/Privacy';
 import Problem from './pages/Problem';
+import NotFound from './pages/NotFound';
 
 import './styles/globals.css';
 import './styles/medicbridges-theme.css';
@@ -33,6 +33,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/clinic/:id" element={<Clinic />} />
+                <Route path="/clinic/:id/no-website" element={<NotFound variant="website" />} />
                 <Route path="/clinic-signup" element={<ClinicSignup />} />
                 <Route path="/for-clinics" element={<ForClinics />} />
                 <Route path="/historias" element={<Historias />} />
@@ -40,6 +41,8 @@ function App() {
                 <Route path="/patient-signup" element={<PatientSignup />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/problem" element={<Problem />} />
+                <Route path="/404" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/404" replace />} />
               </Routes>
             </main>
             <Footer />

@@ -27,6 +27,16 @@ function countSites(result) {
   return (result?.organizations || []).reduce((n, o) => n + (o.sites?.length || 0), 0);
 }
 
+// Key of the first site in the result set, matching the list's flatten order.
+function firstSiteKey(result) {
+  for (const org of result?.organizations || []) {
+    for (const site of org.sites || []) {
+      return `${org.org_id}:${site.site_id}`;
+    }
+  }
+  return null;
+}
+
 const Search = () => {
   const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
 
@@ -46,11 +56,12 @@ const Search = () => {
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [mobileView, setMobileView] = useState('map');
   const sheetTouchY = useRef(null);
+  const listScrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches,
   );
 
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(0);
   const [autoExpanded, setAutoExpanded] = useState(null); // { from, to } when radius was widened automatically
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -85,8 +96,16 @@ const Search = () => {
     });
   }, [data, textQuery]);
 
+  const totalPages = Math.max(1, Math.ceil(clinics.length / PAGE_SIZE));
+  // Clamp in case the result set shrank (e.g. text filter) without a reset.
+  const safePage = Math.min(page, totalPages - 1);
+  const pageClinics = useMemo(
+    () => clinics.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
+    [clinics, safePage],
+  );
+
   const mapSites = useMemo(
-    () => clinics.map(({ org, site }) => {
+    () => pageClinics.map(({ org, site }) => {
       const distLabel = formatDistance(site.distance_m ?? org.distance_m);
       return {
         orgId: org.org_id,
@@ -103,7 +122,7 @@ const Search = () => {
         directions: directionsUrl(site),
       };
     }),
-    [clinics],
+    [pageClinics],
   );
 
   const activeFilterCount = useMemo(() => {
@@ -143,7 +162,8 @@ const Search = () => {
         radiusKm = wider;
       }
       setData(result);
-      setVisibleCount(PAGE_SIZE);
+      setPage(0);
+      setSelectedSiteId(firstSiteKey(result)); // highlight the first (nearest) clinic
       if (radiusKm !== f.radiusKm && countSites(result) > 0) {
         setFilters((prev) => ({ ...prev, radiusKm }));
         setAutoExpanded({ from: f.radiusKm, to: radiusKm });
@@ -200,6 +220,15 @@ const Search = () => {
     runSearch(coords, next);
   }
 
+  // Change page: clear the active selection so the map frames the whole page.
+  function goToPage(p) {
+    const clamped = Math.min(Math.max(p, 0), totalPages - 1);
+    if (clamped === safePage) return;
+    setPage(clamped);
+    setSelectedSiteId(null);
+    listScrollRef.current?.scrollTo({ top: 0 });
+  }
+
   const desert = data?.meta?.healthcare_desert;
   const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : 'your area');
 
@@ -233,7 +262,7 @@ const Search = () => {
         </div>
       );
     }
-    const cards = clinics.slice(0, visibleCount).map(({ org, site }) => {
+    return pageClinics.map(({ org, site }) => {
       const siteKey = `${org.org_id}:${site.site_id}`;
       return (
         <ClinicCard
@@ -247,26 +276,55 @@ const Search = () => {
         />
       );
     });
-    const remaining = clinics.length - visibleCount;
-    if (remaining > 0) {
-      cards.push(
-        <button
-          key="show-more"
-          type="button"
-          className="mb-btn mb-btn-outline"
-          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-          style={{
-            flexShrink: 0,
-            width: carousel ? '150px' : '100%',
-            height: carousel ? 'auto' : '44px',
-            alignSelf: carousel ? 'stretch' : undefined,
-          }}
-        >
-          Show {Math.min(remaining, PAGE_SIZE)} more
-        </button>,
-      );
-    }
-    return cards;
+  }
+
+  // Prev / numbered / Next controls. Hidden when everything fits on one page.
+  function renderPagination() {
+    if (loading || totalPages <= 1) return null;
+    const span = 5;
+    let start = Math.max(0, safePage - 2);
+    const end = Math.min(totalPages, start + span);
+    start = Math.max(0, end - span);
+    const nums = Array.from({ length: end - start }, (_, i) => start + i);
+    const navBtn = (disabled) => ({
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '32px',
+      height: '32px',
+      borderRadius: '8px',
+      border: '1px solid var(--mb-border)',
+      background: '#fff',
+      color: disabled ? 'var(--mb-border)' : 'var(--mb-text-secondary)',
+      cursor: disabled ? 'default' : 'pointer',
+    });
+    const numBtn = (active) => ({
+      minWidth: '32px',
+      height: '32px',
+      padding: '0 6px',
+      borderRadius: '8px',
+      border: `1px solid ${active ? 'var(--mb-primary)' : 'var(--mb-border)'}`,
+      background: active ? 'var(--mb-primary)' : '#fff',
+      color: active ? '#fff' : 'var(--mb-text-primary)',
+      fontSize: '13px',
+      fontWeight: 600,
+      cursor: 'pointer',
+    });
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', padding: '4px 0 2px' }}>
+        <button type="button" aria-label="Previous page" disabled={safePage === 0} style={navBtn(safePage === 0)} onClick={() => goToPage(safePage - 1)}>
+          <ChevronLeft size={16} />
+        </button>
+        {nums.map((n) => (
+          <button key={n} type="button" aria-label={`Page ${n + 1}`} aria-current={n === safePage ? 'page' : undefined} style={numBtn(n === safePage)} onClick={() => goToPage(n)}>
+            {n + 1}
+          </button>
+        ))}
+        <button type="button" aria-label="Next page" disabled={safePage === totalPages - 1} style={navBtn(safePage === totalPages - 1)} onClick={() => goToPage(safePage + 1)}>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    );
   }
 
   const chip = (active, lead) => ({
@@ -383,7 +441,7 @@ const Search = () => {
         type="text"
         placeholder="Filter by name or service"
         value={textQuery}
-        onChange={(e) => { setTextQuery(e.target.value); setVisibleCount(PAGE_SIZE); }}
+        onChange={(e) => { setTextQuery(e.target.value); setPage(0); }}
         style={{
           width: '100%',
           height: '42px',
@@ -456,9 +514,14 @@ const Search = () => {
                 </p>
               )}
             </div>
-            <div className="mb-noscroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div ref={listScrollRef} className="mb-noscroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {renderResults()}
             </div>
+            {totalPages > 1 && !loading && (
+              <div style={{ borderTop: '1px solid var(--mb-border-soft)', padding: '10px 16px' }}>
+                {renderPagination()}
+              </div>
+            )}
           </div>
 
           {/* Collapse handle */}
@@ -615,6 +678,9 @@ const Search = () => {
                   {renderResults(true)}
                 </div>
               )
+            )}
+            {!sheetCollapsed && totalPages > 1 && !loading && (
+              <div style={{ padding: '8px 16px 2px' }}>{renderPagination()}</div>
             )}
           </div>
         </>

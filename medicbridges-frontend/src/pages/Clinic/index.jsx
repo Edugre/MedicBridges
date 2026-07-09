@@ -1,17 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, ArrowLeft, Check, ExternalLink, Pill,
   AlertCircle, Building2, Send, Bookmark, ChevronDown,
 } from 'lucide-react';
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
+import LocationMap from '../../components/LocationMap';
+
+// A missing clinic, a 404, or a malformed id (e.g. not a valid UUID) all mean
+// "this clinic doesn't exist" from the user's point of view.
+function isNotFound(err) {
+  return (
+    err.code === 'not_found' ||
+    err.status === 404 ||
+    err.status === 400 ||
+    /not found|invalid input syntax|uuid/i.test(err.message || '')
+  );
+}
 
 const Clinic = () => {
   const { id } = useParams();
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   const [saved, setSaved] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(false);
 
@@ -20,16 +33,18 @@ const Clinic = () => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setLoading(true);
     setError(null);
+    setNotFound(false);
     /* eslint-enable react-hooks/set-state-in-effect */
     getOrganization(id, { signal: controller.signal })
       .then((data) => setOrg(data))
       .catch((err) => {
         if (err.name === 'AbortError') return;
-        setError(
-          err.code === 'not_found'
-            ? 'This clinic could not be found.'
-            : err.message || 'Could not load this clinic.'
-        );
+        if (isNotFound(err)) {
+          setNotFound(true);
+        } else {
+          // Never surface raw backend/DB errors to users.
+          setError('We couldn’t load this clinic. Please try again in a moment.');
+        }
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
@@ -42,6 +57,10 @@ const Clinic = () => {
   const website = primary?.website || org?.website;
   const address = primary && formatAddress(primary);
   const directions = primary && directionsUrl(primary);
+
+  if (!loading && notFound) {
+    return <Navigate to="/404" replace />;
+  }
 
   return (
     <div className="clinic-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '26px 34px 38px', animation: 'fadeIn 0.6s ease-out' }}>
@@ -102,10 +121,18 @@ const Clinic = () => {
                     <Phone size={15} /> <span className="abtn-label-full">{primary.phone}</span><span className="abtn-label-short">Call</span>
                   </a>
                 )}
-                {website && (
+                {website ? (
                   <a className="abtn abtn-website" href={website} target="_blank" rel="noreferrer">
                     <Globe size={15} /> Website
                   </a>
+                ) : (
+                  <Link
+                    className="abtn abtn-website"
+                    to={`/clinic/${id}/no-website`}
+                    state={{ clinicName: primary?.name || org.name }}
+                  >
+                    <Globe size={15} /> Website
+                  </Link>
                 )}
                 <button
                   type="button"
@@ -120,14 +147,14 @@ const Clinic = () => {
               </div>
             </div>
 
-            {/* Location snapshot (decorative placeholder) */}
-            <div className="clinic-map mapmini" aria-hidden="true">
-              <div style={{ position: 'absolute', right: '-40px', top: '-30px', width: '240px', height: '280px', background: '#D3E6E2', borderRadius: '44% 52% 46% 56%', transform: 'rotate(14deg)' }} />
-              <div style={{ position: 'absolute', left: '20px', bottom: '30px', width: '140px', height: '100px', background: '#DEE8CB', borderRadius: '22px' }} />
-              <div className="road-h" style={{ top: '34%' }} />
-              <div className="road-v" style={{ left: '52%' }} />
-              <div className="pin" style={{ left: '52%', top: '44%' }}><MapPin size={12} /> You&apos;re here</div>
-            </div>
+            {/* Location map — expands to a full interactive modal on click */}
+            <LocationMap
+              latitude={primary?.latitude}
+              longitude={primary?.longitude}
+              name={primary?.name || org.name}
+              address={address}
+              directions={directions}
+            />
           </div>
 
           {/* ---------- Two-column body ---------- */}
@@ -308,18 +335,9 @@ const Clinic = () => {
         }
         .glance:last-child { border-bottom: none; }
         .yes { color: var(--mb-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
-        .mapmini {
+        .clinic-map {
           position: relative; background: #E7E2D7; overflow: hidden;
-          width: 360px; flex-shrink: 0;
-        }
-        .mapmini .road-h { position: absolute; left: -6%; right: -6%; height: 8px; background: #F6F2EA; }
-        .mapmini .road-v { position: absolute; top: -6%; bottom: -6%; width: 8px; background: #F6F2EA; }
-        .mapmini .pin {
-          position: absolute; transform: translate(-50%, -100%);
-          background: var(--mb-honey); color: #3a2403; padding: 5px 10px;
-          border-radius: 999px; font-size: 11.5px; font-weight: 700;
-          box-shadow: 0 8px 22px rgba(239,159,39,.45); border: 2px solid #fff;
-          white-space: nowrap; display: flex; align-items: center; gap: 4px;
+          width: 360px; min-height: 260px; flex-shrink: 0;
         }
         @media (max-width: 768px) {
           .clinic-page { padding: 16px 15px 26px; }
