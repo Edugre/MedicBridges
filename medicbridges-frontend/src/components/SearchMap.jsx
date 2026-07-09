@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Plus, Minus, LocateFixed, RotateCw } from 'lucide-react';
@@ -167,8 +167,17 @@ const SearchMap = ({
       markerCount += 1;
     }
 
-    if (markerCount > 0) {
+    // On a fresh result set, zoom in on the selected (nearest) clinic if there
+    // is one; otherwise fall back to fitting all pins in view.
+    const focus = sites.find(
+      (s) => `${s.orgId}:${s.siteId}` === selectedSiteId && s.latitude != null && s.longitude != null,
+    );
+    if (focus) {
+      map.flyTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: 700, essential: true });
+    } else if (markerCount > 0) {
       map.fitBounds(bounds, { padding: fitPadding || DEFAULT_PADDING, maxZoom: 14, duration: 600 });
+    }
+    if (focus || markerCount > 0) {
       setShowSearchArea(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,6 +194,23 @@ const SearchMap = ({
       el.classList.toggle('mb-fee-pin--selected', Boolean(match));
     }
   }, [selectedSiteId, sites]);
+
+  // Ease the map onto whichever clinic is active (hovered in the list or the
+  // auto-selected nearest one). Zooms in but never out, so it feels like a
+  // focus rather than a jarring reset.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !TOKEN || !selectedSiteId) return;
+    const site = sites.find((s) => `${s.orgId}:${s.siteId}` === selectedSiteId);
+    if (!site || site.latitude == null || site.longitude == null) return;
+    map.easeTo({
+      center: [site.longitude, site.latitude],
+      zoom: Math.max(map.getZoom(), 14),
+      duration: 500,
+      essential: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSiteId]);
 
   // Selected-clinic popup.
   useEffect(() => {
