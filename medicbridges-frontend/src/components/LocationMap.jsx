@@ -13,9 +13,18 @@ if (TOKEN) {
 const INLINE_ZOOM = 12;
 const MODAL_ZOOM = 14;
 
+// Classic teardrop map pin whose tip sits exactly on the coordinate.
+const PIN_SVG = `
+<svg width="30" height="39" viewBox="-1 -1 26 34" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 20 12 20s12-11.6 12-20C24 5.4 18.6 0 12 0z"
+        fill="#0F6E56" stroke="#fff" stroke-width="1.75"/>
+  <circle cx="12" cy="12" r="4.5" fill="#fff"/>
+</svg>`;
+
 function addClinicMarker(map, lon, lat) {
   const el = document.createElement('div');
   el.className = 'mb-clinic-pin';
+  el.innerHTML = PIN_SVG;
   new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([lon, lat]).addTo(map);
 }
 

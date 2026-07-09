@@ -205,15 +205,10 @@
   100% { transform: scale(1.9); opacity: 0; }
 }
 
-/* Single clinic location pin (teardrop) used on the clinic detail map. */
+/* Single clinic location pin (SVG teardrop) used on the clinic detail map. */
 .mb-clinic-pin {
-  width: 22px;
-  height: 22px;
-  border-radius: 50% 50% 50% 0;
-  background: var(--mb-primary);
-  border: 2.5px solid #fff;
-  transform: rotate(-45deg);
-  box-shadow: 0 4px 10px rgba(15, 110, 86, 0.45);
+  line-height: 0;
+  filter: drop-shadow(0 4px 6px rgba(15, 110, 86, 0.4));
 }
 
 /* Clinic detail location map + expand-to-modal */
