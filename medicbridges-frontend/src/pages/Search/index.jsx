@@ -17,7 +17,15 @@ import SearchMap from '../../components/SearchMap';
 import SearchLoadingModal from '../../components/SearchLoadingModal';
 
 const RADIUS_OPTIONS = [1, 2, 5, 10, 20];
+const DEFAULT_RADIUS_KM = 5;
+const MAX_RADIUS_KM = RADIUS_OPTIONS[RADIUS_OPTIONS.length - 1];
+const PAGE_SIZE = 20;
 const MOBILE_QUERY = '(max-width: 900px)';
+
+// Total number of sites the API returned, ignoring the client-side text filter.
+function countSites(result) {
+  return (result?.organizations || []).reduce((n, o) => n + (o.sites?.length || 0), 0);
+}
 
 const Search = () => {
   const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
@@ -27,7 +35,7 @@ const Search = () => {
     serviceCategory: '',
     slidingScale: false,
     has340b: false,
-    radiusKm: 20,
+    radiusKm: DEFAULT_RADIUS_KM,
   });
   const [textQuery, setTextQuery] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -42,6 +50,8 @@ const Search = () => {
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches,
   );
 
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [autoExpanded, setAutoExpanded] = useState(null); // { from, to } when radius was widened automatically
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -101,7 +111,7 @@ const Search = () => {
     if (filters.serviceCategory) count += 1;
     if (filters.slidingScale) count += 1;
     if (filters.has340b) count += 1;
-    if (filters.radiusKm !== 20) count += 1;
+    if (filters.radiusKm !== DEFAULT_RADIUS_KM) count += 1;
     return count;
   }, [filters]);
 
@@ -111,17 +121,33 @@ const Search = () => {
     abortRef.current = controller;
     setLoading(true);
     setError(null);
+    setAutoExpanded(null);
     try {
-      const result = await searchNearby({
-        lat: center.lat,
-        lon: center.lon,
-        radiusKm: f.radiusKm,
-        serviceCategories: f.serviceCategory ? [f.serviceCategory] : undefined,
-        acceptsSlidingScale: f.slidingScale || undefined,
-        has340b: f.has340b || undefined,
-        signal: controller.signal,
-      });
+      // Progressively widen the radius until we find clinics (or hit the max),
+      // so a sparse area doesn't dead-end at an empty 5 km search.
+      let radiusKm = f.radiusKm;
+      let result;
+      for (;;) {
+        result = await searchNearby({
+          lat: center.lat,
+          lon: center.lon,
+          radiusKm,
+          serviceCategories: f.serviceCategory ? [f.serviceCategory] : undefined,
+          acceptsSlidingScale: f.slidingScale || undefined,
+          has340b: f.has340b || undefined,
+          signal: controller.signal,
+        });
+        if (countSites(result) > 0 || radiusKm >= MAX_RADIUS_KM) break;
+        const wider = RADIUS_OPTIONS.find((r) => r > radiusKm);
+        if (!wider) break;
+        radiusKm = wider;
+      }
       setData(result);
+      setVisibleCount(PAGE_SIZE);
+      if (radiusKm !== f.radiusKm && countSites(result) > 0) {
+        setFilters((prev) => ({ ...prev, radiusKm }));
+        setAutoExpanded({ from: f.radiusKm, to: radiusKm });
+      }
     } catch (err) {
       if (err.name === 'AbortError') return;
       setError(err.message || 'Something went wrong. Please try again.');
@@ -151,7 +177,7 @@ const Search = () => {
   }
 
   function resetFilters() {
-    setFilters({ serviceCategory: '', slidingScale: false, has340b: false, radiusKm: 20 });
+    setFilters({ serviceCategory: '', slidingScale: false, has340b: false, radiusKm: DEFAULT_RADIUS_KM });
     setTextQuery('');
   }
 
@@ -207,7 +233,7 @@ const Search = () => {
         </div>
       );
     }
-    return clinics.map(({ org, site }) => {
+    const cards = clinics.slice(0, visibleCount).map(({ org, site }) => {
       const siteKey = `${org.org_id}:${site.site_id}`;
       return (
         <ClinicCard
@@ -221,6 +247,26 @@ const Search = () => {
         />
       );
     });
+    const remaining = clinics.length - visibleCount;
+    if (remaining > 0) {
+      cards.push(
+        <button
+          key="show-more"
+          type="button"
+          className="mb-btn mb-btn-outline"
+          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          style={{
+            flexShrink: 0,
+            width: carousel ? '150px' : '100%',
+            height: carousel ? 'auto' : '44px',
+            alignSelf: carousel ? 'stretch' : undefined,
+          }}
+        >
+          Show {Math.min(remaining, PAGE_SIZE)} more
+        </button>,
+      );
+    }
+    return cards;
   }
 
   const chip = (active, lead) => ({
@@ -251,7 +297,7 @@ const Search = () => {
         340B meds
       </button>
       <div style={{ position: 'relative' }}>
-        <button type="button" style={chip(filters.radiusKm !== 20)} onClick={() => setRadiusMenuOpen((o) => !o)}>
+        <button type="button" style={chip(filters.radiusKm !== DEFAULT_RADIUS_KM)} onClick={() => setRadiusMenuOpen((o) => !o)}>
           Within {filters.radiusKm} km <ChevronDown size={13} strokeWidth={2.2} />
         </button>
         {radiusMenuOpen && (
@@ -310,6 +356,26 @@ const Search = () => {
     </>
   );
 
+  const autoExpandNotice = autoExpanded && !loading && (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '6px',
+        marginTop: '10px',
+        padding: '8px 11px',
+        borderRadius: '10px',
+        background: 'var(--mb-bg-sage)',
+        color: 'var(--mb-text-secondary)',
+        fontSize: '12.5px',
+        lineHeight: 1.35,
+      }}
+    >
+      <MapPin size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+      <span>No clinics within {autoExpanded.from} km — showing the nearest within {autoExpanded.to} km.</span>
+    </div>
+  );
+
   const searchField = (
     <div style={{ position: 'relative' }}>
       <SearchIcon size={16} color="var(--mb-text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -317,7 +383,7 @@ const Search = () => {
         type="text"
         placeholder="Filter by name or service"
         value={textQuery}
-        onChange={(e) => setTextQuery(e.target.value)}
+        onChange={(e) => { setTextQuery(e.target.value); setVisibleCount(PAGE_SIZE); }}
         style={{
           width: '100%',
           height: '42px',
@@ -383,6 +449,7 @@ const Search = () => {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '12px' }}>
                 {renderChips()}
               </div>
+              {autoExpandNotice}
               {geoError && (
                 <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--mb-text-muted)', fontSize: '0.8rem', margin: '10px 0 0' }}>
                   <AlertCircle size={13} /> {geoError}
@@ -535,6 +602,9 @@ const Search = () => {
                 </button>
               </div>
             </div>
+            {autoExpanded && !loading && !sheetCollapsed && (
+              <div style={{ padding: '0 16px' }}>{autoExpandNotice}</div>
+            )}
             {!sheetCollapsed && (
               mobileView === 'list' ? (
                 <div className="mb-noscroll" style={{ overflowY: 'auto', padding: '0 16px 6px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
