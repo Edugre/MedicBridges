@@ -135,7 +135,7 @@ const Footer = () => {
             <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--mb-text-disabled)', margin: '0 0 16px 0' }}>
               {t.disclaimer}
             </p>
-            <Link to="/privacy" className="mb-btn mb-btn-outline" style={{ fontSize: '12px', padding: '6px 14px', height: 'auto', borderRadius: '8px' }}>
+            <Link to="/privacy" className="mb-btn mb-btn-outline" style={{ fontSize: '15px', padding: '12px 24px', height: 'auto', borderRadius: '10px', display: 'inline-block' }}>
               {t.privacyBtn}
             </Link>
           </div>
