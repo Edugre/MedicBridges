@@ -20,7 +20,6 @@ const CONTENT = {
     s3List3: "Understand, in aggregate and anonymized form, what kinds of needs site users have (for example, \"how many people are looking for dental care\"), without identifying any specific person.",
     s3BodyOutro: "We do not sell your personal information, and we do not share it with insurers, employers, or other third parties for their own commercial purposes. If MedicBridges generates revenue in the future (for example, through sponsorships, grants, or paid features), that revenue will not come from selling or renting individual users' personal data.",
     s4Title: "4. Who we share information with",
-    s4List1: "Technical service providers: we use services such as Supabase (database) and Anthropic's API (Claude) to operate the chat. These providers process data on our behalf under their own privacy terms; as of this writing they do not use your conversations for their own commercial purposes or model training, but you should verify each provider's current terms before publishing this policy, since terms can change.",
     s4List2: "We do not share your information with clinics, insurers, employers, or any other organization without your explicit consent (for example, if a future feature lets you \"send my info to this clinic to book an appointment\").",
     s4List3: "We may disclose information if required by law (for example, in response to a valid court order).",
     s5Title: "5. Chat conversations",
@@ -58,7 +57,6 @@ const CONTENT = {
     s3List3: "Comprender, de forma agregada y anónima, qué tipo de necesidades tienen los usuarios del sitio (por ejemplo, \"cuántas personas buscan atención dental\"), sin identificar a ninguna persona específica.",
     s3BodyOutro: "No vendemos su información personal y no la compartimos con aseguradoras, empleadores u otros terceros para sus propios fines comerciales. Si MedicBridges genera ingresos en el futuro (por ejemplo, mediante patrocinios, subvenciones o funciones de pago), esos ingresos no provendrán de vender o alquilar los datos personales de los usuarios individuales.",
     s4Title: "4. Con quién compartimos información",
-    s4List1: "Proveedores de servicios técnicos: utilizamos servicios como Supabase (base de datos) y la API de Anthropic (Claude) para operar el chat. Estos proveedores procesan datos en nuestro nombre bajo sus propios términos de privacidad; al momento de escribir este documento, no utilizan sus conversaciones para sus propios fines comerciales o de entrenamiento de modelos, pero debe verificar los términos actuales de cada proveedor, ya que los términos pueden cambiar.",
     s4List2: "No compartimos su información con clínicas, aseguradoras, empleadores ni ninguna otra organización sin su consentimiento explícito (por ejemplo, si una función futura le permite \"enviar mi información a esta clínica para programar una cita\").",
     s4List3: "Podemos divulgar información si la ley lo exige (por ejemplo, en respuesta a una orden judicial válida).",
     s5Title: "5. Conversaciones de chat",
@@ -129,7 +127,6 @@ const Privacy = () => {
 
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--mb-text-primary)' }}>{t.s4Title}</h2>
         <ul style={{ color: 'var(--mb-text-secondary)', lineHeight: 1.6, marginBottom: '2.5rem', paddingLeft: '1.5rem' }}>
-          <li style={{ marginBottom: '0.5rem' }}>{t.s4List1}</li>
           <li style={{ marginBottom: '0.5rem' }}>{t.s4List2}</li>
           <li>{t.s4List3}</li>
         </ul>
