@@ -35,9 +35,7 @@ const CONTENT = {
     s9Title: "9. Minors",
     s9Body: "MedicBridges is intended for individuals 18 and older. If you are a minor, we recommend using this site alongside a trusted adult or seeking health resources designed for minors directly.",
     s10Title: "10. Changes to this policy",
-    s10Body: "We may update this policy as the project grows. We'll post the date of the most recent update at the top of this page.",
-    s11Title: "11. Contact",
-    s11Body: "If you have questions about this policy or how we handle your information, contact us at medibridge@fiu.edu."
+    s10Body: "We may update this policy as the project grows. We'll post the date of the most recent update at the top of this page."
   },
   es: {
     title: "Política de datos y privacidad — MedicBridges",
@@ -72,9 +70,7 @@ const CONTENT = {
     s9Title: "9. Menores de edad",
     s9Body: "MedicBridges está destinado a personas mayores de 18 años. Si es menor de edad, le recomendamos usar este sitio junto con un adulto de confianza o buscar recursos de salud diseñados directamente para menores.",
     s10Title: "10. Cambios a esta política",
-    s10Body: "Podemos actualizar esta política a medida que crezca el proyecto. Publicaremos la fecha de la actualización más reciente en la parte superior de esta página.",
-    s11Title: "11. Contacto",
-    s11Body: "Si tiene preguntas sobre esta política o sobre cómo manejamos su información, contáctenos en medibridge@fiu.edu."
+    s10Body: "Podemos actualizar esta política a medida que crezca el proyecto. Publicaremos la fecha de la actualización más reciente en la parte superior de esta página."
   }
 };
 
@@ -161,11 +157,6 @@ const Privacy = () => {
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--mb-text-primary)' }}>{t.s10Title}</h2>
         <p style={{ color: 'var(--mb-text-secondary)', lineHeight: 1.6, marginBottom: '2.5rem' }}>
           {t.s10Body}
-        </p>
-
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--mb-text-primary)' }}>{t.s11Title}</h2>
-        <p style={{ color: 'var(--mb-text-secondary)', lineHeight: 1.6, marginBottom: '2.5rem' }}>
-          {t.s11Body}
         </p>
 
       </div>
