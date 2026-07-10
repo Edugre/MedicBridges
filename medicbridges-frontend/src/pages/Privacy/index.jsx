@@ -90,9 +90,7 @@ const Privacy = () => {
       <div style={{ marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t.title}</h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--mb-text-secondary)', fontWeight: 600 }}>{t.lastUpdated}</p>
-        <div style={{ display: 'inline-block', padding: '0.25rem 1rem', backgroundColor: 'var(--mb-lime-soft)', color: 'var(--mb-accent)', borderRadius: 'var(--mb-radius-pill)', marginTop: '1rem', border: '1px solid var(--mb-true-lime)' }}>
-          Florida International University — Student Research Project
-        </div>
+
       </div>
 
       <div className="mb-bento-card privacy-card" style={{ padding: '3rem' }}>
