@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, ArrowLeft, Check, ExternalLink, Pill,
-  AlertCircle, Building2, Send, Bookmark, ChevronDown,
+  AlertCircle, Building2, Send, Bookmark, ChevronDown, Flag,
 } from 'lucide-react';
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
@@ -261,6 +261,16 @@ const Clinic = () => {
                   )}
                 </div>
               )}
+
+              {/* Not wired up yet — disabled until reporting is implemented. */}
+              <button
+                type="button"
+                className="report-problem"
+                disabled
+                title="Coming soon"
+              >
+                <Flag size={16} /> Report a problem
+              </button>
             </div>
           </div>
         </>
@@ -268,6 +278,15 @@ const Clinic = () => {
 
       <style>{`
         .clinic-back:hover { color: var(--mb-primary); }
+        .report-problem {
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+          width: 100%; padding: 11px 14px; border-radius: 12px;
+          border: 1px solid var(--mb-border); background: var(--mb-bg-surface);
+          color: var(--mb-text-secondary); font: inherit; font-size: 13.5px; font-weight: 600;
+          cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+        .report-problem:hover:not(:disabled) { background: var(--mb-bg-surface-hover); color: var(--mb-text-primary); }
+        .report-problem:disabled { opacity: 0.55; cursor: not-allowed; }
         .dcard {
           background: var(--mb-bg-surface);
           border: 1px solid var(--mb-border);

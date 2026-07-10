@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Clinic from './pages/Clinic';
@@ -50,6 +51,7 @@ function App() {
             <Footer />
           </div>
           <SearchOptionsModal />
+          <Analytics />
         </SearchModalProvider>
       </LangProvider>
     </BrowserRouter>
