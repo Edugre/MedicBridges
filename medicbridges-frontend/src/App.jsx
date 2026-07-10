@@ -20,10 +20,12 @@ import Footer from './layout/Footer';
 import SearchOptionsModal from './components/SearchOptionsModal';
 import { SearchModalProvider } from './context/SearchModalContext';
 import { LangProvider } from './context/LangContext';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <LangProvider>
         <SearchModalProvider>
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
