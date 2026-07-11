@@ -2,6 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Maximize2, X, Send, MapPin } from 'lucide-react';
+import { useLang } from '../context/LangContext';
+
+const CONTENT = {
+  en: {
+    expandMap: (name) => `Expand map${name ? ` for ${name}` : ''}`,
+    expand: 'Expand',
+    mapFor: (name) => `Map for ${name || 'clinic'}`,
+    closeMap: 'Close map',
+    getDirections: 'Get directions',
+  },
+  es: {
+    expandMap: (name) => `Ampliar mapa${name ? ` de ${name}` : ''}`,
+    expand: 'Ampliar',
+    mapFor: (name) => `Mapa de ${name || 'la clínica'}`,
+    closeMap: 'Cerrar mapa',
+    getDirections: 'Obtener indicaciones',
+  },
+};
 
 const TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 if (TOKEN) {
@@ -38,6 +56,8 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
   const modalRef = useRef(null);
   const modalMap = useRef(null);
   const [expanded, setExpanded] = useState(false);
+  const { lang } = useLang();
+  const t = CONTENT[lang];
 
   const hasCoords = latitude != null && longitude != null;
 
@@ -74,9 +94,9 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
     addClinicMarker(map, longitude, latitude);
     modalMap.current = map;
     // The container is measured only after the modal paints.
-    const t = setTimeout(() => map.resize(), 0);
+    const timer = setTimeout(() => map.resize(), 0);
     return () => {
-      clearTimeout(t);
+      clearTimeout(timer);
       map.remove();
       modalMap.current = null;
     };
@@ -122,11 +142,11 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
         type="button"
         className="clinic-map clinic-map-btn"
         onClick={() => setExpanded(true)}
-        aria-label={`Expand map${name ? ` for ${name}` : ''}`}
+        aria-label={t.expandMap(name)}
       >
         <div ref={inlineRef} style={{ position: 'absolute', inset: 0 }} />
         <span className="clinic-map-expand">
-          <Maximize2 size={14} /> Expand
+          <Maximize2 size={14} /> {t.expand}
         </span>
       </button>
 
@@ -135,7 +155,7 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
           className="clinic-map-modal"
           role="dialog"
           aria-modal="true"
-          aria-label={`Map for ${name || 'clinic'}`}
+          aria-label={t.mapFor(name)}
           onClick={() => setExpanded(false)}
         >
           <div className="clinic-map-modal-inner" onClick={(e) => e.stopPropagation()}>
@@ -144,7 +164,7 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
               type="button"
               className="clinic-map-close"
               onClick={() => setExpanded(false)}
-              aria-label="Close map"
+              aria-label={t.closeMap}
             >
               <X size={20} />
             </button>
@@ -156,7 +176,7 @@ const LocationMap = ({ latitude, longitude, name, address, directions }) => {
                 rel="noreferrer"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}
               >
-                <Send size={15} /> Get directions
+                <Send size={15} /> {t.getDirections}
               </a>
             )}
           </div>

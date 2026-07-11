@@ -1,27 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Search, ListChecks, X } from 'lucide-react';
+import { useLang } from '../context/LangContext';
 
-const STEPS = [
-  { icon: MapPin, label: 'Locating you' },
-  { icon: Search, label: 'Searching clinics' },
-  { icon: ListChecks, label: 'Ranking results' },
-];
+const STEP_ICONS = [MapPin, Search, ListChecks];
 
-const STATUS_TEXT = [
-  'Pinpointing your area',
-  'Scanning nearby clinics',
-  'Sorting your best matches',
-  'All set — showing results',
-];
-
-const TIPS = [
-  'Community health centers often set fees on a sliding scale — you pay based on your income, not your insurance.',
-  '340B pharmacies can cut prescription prices dramatically. We flag every one we find.',
-  "Federally Qualified Health Centers can't turn you away if you're unable to pay.",
-  'No account, ever. Your ZIP is used only to search — it’s never stored.',
-];
+const CONTENT = {
+  en: {
+    cancelSearch: 'Cancel search',
+    title: 'Finding care near you',
+    subtitle: 'Hang tight — this usually takes a few seconds.',
+    stepLabels: ['Locating you', 'Searching clinics', 'Ranking results'],
+    statusText: [
+      'Pinpointing your area',
+      'Scanning nearby clinics',
+      'Sorting your best matches',
+      'All set — showing results',
+    ],
+    goodToKnow: 'Good to know',
+    tips: [
+      'Community health centers often set fees on a sliding scale — you pay based on your income, not your insurance.',
+      '340B pharmacies can cut prescription prices dramatically. We flag every one we find.',
+      "Federally Qualified Health Centers can't turn you away if you're unable to pay.",
+      'No account, ever. Your ZIP is used only to search — it’s never stored.',
+    ],
+    footer: ['Free for patients', 'No account needed', 'Your info is never stored'],
+  },
+  es: {
+    cancelSearch: 'Cancelar búsqueda',
+    title: 'Buscando atención cerca de ti',
+    subtitle: 'Un momento — esto suele tardar unos segundos.',
+    stepLabels: ['Ubicándote', 'Buscando clínicas', 'Clasificando resultados'],
+    statusText: [
+      'Localizando tu área',
+      'Explorando clínicas cercanas',
+      'Ordenando tus mejores opciones',
+      'Listo — mostrando resultados',
+    ],
+    goodToKnow: 'Bueno saber',
+    tips: [
+      'Los centros de salud comunitaria suelen fijar tarifas en escala móvil — pagas según tus ingresos, no según tu seguro.',
+      'Las farmacias 340B pueden reducir drásticamente el precio de las recetas. Señalamos todas las que encontramos.',
+      'Los Centros de Salud Calificados Federalmente no pueden rechazarte si no puedes pagar.',
+      'Sin cuenta, nunca. Tu código postal solo se usa para buscar — nunca se guarda.',
+    ],
+    footer: ['Gratis para pacientes', 'No se necesita cuenta', 'Tu información nunca se guarda'],
+  },
+};
 
 const FILL_WIDTH = ['0px', 'calc(50% - 70px)', 'calc(100% - 140px)', 'calc(100% - 140px)'];
+const TIP_COUNT = CONTENT.en.tips.length;
 
 const nodeState = (index, activeStep) => {
   if (index < activeStep) return 'done';
@@ -37,6 +64,8 @@ const LABEL_COLOR = { pending: '#A6A7A0', active: 'var(--mb-primary)', done: 'va
 const SearchLoadingModal = ({ open, onCancel }) => {
   const [step, setStep] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
+  const { lang } = useLang();
+  const t = CONTENT[lang];
 
   // Advance the phase steps on a short timed sequence while open.
   useEffect(() => {
@@ -56,7 +85,7 @@ const SearchLoadingModal = ({ open, onCancel }) => {
     if (!open) return undefined;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTipIndex(0);
-    const id = setInterval(() => setTipIndex((i) => (i + 1) % TIPS.length), 3900);
+    const id = setInterval(() => setTipIndex((i) => (i + 1) % TIP_COUNT), 3900);
     return () => clearInterval(id);
   }, [open]);
 
@@ -115,7 +144,7 @@ const SearchLoadingModal = ({ open, onCancel }) => {
           <button
             type="button"
             onClick={onCancel}
-            aria-label="Cancel search"
+            aria-label={t.cancelSearch}
             className="slm-close"
             style={{
               position: 'absolute',
@@ -143,10 +172,10 @@ const SearchLoadingModal = ({ open, onCancel }) => {
             id="search-loading-title"
             style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em', margin: 0, color: 'var(--mb-text-primary)' }}
           >
-            Finding care near you
+            {t.title}
           </h2>
           <p style={{ fontSize: '14px', color: 'var(--mb-text-secondary)', margin: '8px 0 0' }}>
-            Hang tight — this usually takes a few seconds.
+            {t.subtitle}
           </p>
         </div>
 
@@ -167,12 +196,12 @@ const SearchLoadingModal = ({ open, onCancel }) => {
               transition: 'width 0.5s ease',
             }}
           />
-          {STEPS.map((s, i) => {
+          {t.stepLabels.map((label, i) => {
             const state = nodeState(i, step);
-            const Icon = s.icon;
+            const Icon = STEP_ICONS[i];
             return (
               <div
-                key={s.label}
+                key={label}
                 style={{ width: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', zIndex: 1 }}
               >
                 <div style={{ position: 'relative' }}>
@@ -215,7 +244,7 @@ const SearchLoadingModal = ({ open, onCancel }) => {
                     color: LABEL_COLOR[state],
                   }}
                 >
-                  {s.label}
+                  {label}
                 </span>
               </div>
             );
@@ -225,17 +254,17 @@ const SearchLoadingModal = ({ open, onCancel }) => {
         {/* Status line */}
         <div style={{ padding: '6px 34px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }}>
           <span className="slm-spinner" />
-          <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--mb-primary)' }}>{STATUS_TEXT[step]}</span>
+          <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--mb-primary)' }}>{t.statusText[step]}</span>
         </div>
 
         {/* Tip card + reassurance footer */}
         <div style={{ padding: '22px 34px 30px' }}>
           <div style={{ background: 'var(--mb-honey-soft)', border: '1px solid #F2E0C2', borderRadius: '14px', padding: '14px 16px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#B87814' }}>
-              Good to know
+              {t.goodToKnow}
             </div>
             <p style={{ fontSize: '13.5px', lineHeight: 1.5, color: 'var(--mb-honey-soft-ink)', margin: '6px 0 0' }}>
-              {TIPS[tipIndex]}
+              {t.tips[tipIndex]}
             </p>
           </div>
 
@@ -251,11 +280,11 @@ const SearchLoadingModal = ({ open, onCancel }) => {
               color: 'var(--mb-text-muted)',
             }}
           >
-            <span>Free for patients</span>
+            <span>{t.footer[0]}</span>
             <span style={{ color: '#D1E8E2' }}>•</span>
-            <span>No account needed</span>
+            <span>{t.footer[1]}</span>
             <span style={{ color: '#D1E8E2' }}>•</span>
-            <span>Your info is never stored</span>
+            <span>{t.footer[2]}</span>
           </div>
         </div>
       </div>

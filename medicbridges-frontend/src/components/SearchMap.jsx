@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Plus, Minus, LocateFixed, RotateCw } from 'lucide-react';
 import { directionsUrl } from '../lib/format';
+import { useLang } from '../context/LangContext';
 
 const TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 if (TOKEN) {
@@ -11,11 +12,46 @@ if (TOKEN) {
 
 const DEFAULT_PADDING = { top: 90, bottom: 70, left: 60, right: 70 };
 
-function createMarkerElement(label, isSelected) {
+const CONTENT = {
+  en: {
+    clinicWithLabel: (label) => `Clinic — ${label}`,
+    clinicLocation: 'Clinic location',
+    clinic: 'Clinic',
+    meds340b: '340B meds',
+    slidingScale: 'Sliding scale',
+    call: 'Call',
+    directions: 'Directions',
+    mapUnavailable1: 'Map unavailable — set ',
+    mapUnavailable2: ' in your ',
+    searchThisArea: 'Search this area',
+    yourLocation: 'Your location',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    useMyLocation: 'Use my location',
+  },
+  es: {
+    clinicWithLabel: (label) => `Clínica — ${label}`,
+    clinicLocation: 'Ubicación de la clínica',
+    clinic: 'Clínica',
+    meds340b: 'Medicamentos 340B',
+    slidingScale: 'Escala móvil',
+    call: 'Llamar',
+    directions: 'Indicaciones',
+    mapUnavailable1: 'Mapa no disponible — configura ',
+    mapUnavailable2: ' en tu ',
+    searchThisArea: 'Buscar en esta área',
+    yourLocation: 'Tu ubicación',
+    zoomIn: 'Acercar',
+    zoomOut: 'Alejar',
+    useMyLocation: 'Usar mi ubicación',
+  },
+};
+
+function createMarkerElement(label, isSelected, t) {
   const el = document.createElement('button');
   el.type = 'button';
   el.className = `mb-fee-pin${isSelected ? ' mb-fee-pin--selected' : ''}`;
-  el.setAttribute('aria-label', label ? `Clinic — ${label}` : 'Clinic location');
+  el.setAttribute('aria-label', label ? t.clinicWithLabel(label) : t.clinicLocation);
   el.textContent = label || '';
   return el;
 }
@@ -26,13 +62,13 @@ function esc(s) {
   ));
 }
 
-function buildPopupHtml(site) {
+function buildPopupHtml(site, t) {
   const badges = [];
   if (site.has340b) {
-    badges.push('<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#FAEEDA;color:#B87814;border:1px solid #F2E0C2">340B meds</span>');
+    badges.push(`<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#FAEEDA;color:#B87814;border:1px solid #F2E0C2">${esc(t.meds340b)}</span>`);
   }
   if (site.sliding) {
-    badges.push('<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#E1F5EE;color:#0F6E56">Sliding scale</span>');
+    badges.push(`<span style="display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:#E1F5EE;color:#0F6E56">${esc(t.slidingScale)}</span>`);
   }
   const badgeRow = badges.length
     ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${badges.join('')}</div>`
@@ -44,10 +80,10 @@ function buildPopupHtml(site) {
     ? `<div style="color:#5A655F;font-size:12.5px;margin-top:3px">${esc(site.address)}</div>`
     : '';
   const call = site.phone
-    ? `<a href="tel:${esc(site.phone)}" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:1px solid #E6E1D6;background:#fff;color:#25302E">Call</a>`
+    ? `<a href="tel:${esc(site.phone)}" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:1px solid #E6E1D6;background:#fff;color:#25302E">${esc(t.call)}</a>`
     : '';
   const dir = site.directions
-    ? `<a href="${esc(site.directions)}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:none;background:#0F6E56;color:#fff">Directions</a>`
+    ? `<a href="${esc(site.directions)}" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;text-decoration:none;border:none;background:#0F6E56;color:#fff">${esc(t.directions)}</a>`
     : '';
   const actions = call || dir
     ? `<div style="display:flex;gap:8px;margin-top:12px">${call}${dir}</div>`
@@ -57,7 +93,7 @@ function buildPopupHtml(site) {
     <div style="width:250px">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="min-width:0">
-          <div style="font-size:15px;font-weight:600;color:#25302E;line-height:1.25">${esc(site.name || 'Clinic')}</div>
+          <div style="font-size:15px;font-weight:600;color:#25302E;line-height:1.25">${esc(site.name || t.clinic)}</div>
           ${address}
         </div>
         ${distance}
@@ -98,6 +134,8 @@ const SearchMap = ({
   const popupRef = useRef(null);
   const suppressClose = useRef(false);
   const [showSearchArea, setShowSearchArea] = useState(false);
+  const { lang } = useLang();
+  const t = CONTENT[lang];
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !TOKEN) return undefined;
@@ -148,7 +186,7 @@ const SearchMap = ({
     // Distinct "you are here" marker at the search center.
     const userEl = document.createElement('div');
     userEl.className = 'mb-user-pin';
-    userEl.setAttribute('aria-label', 'Your location');
+    userEl.setAttribute('aria-label', t.yourLocation);
     const userMarker = new mapboxgl.Marker({ element: userEl, anchor: 'center' })
       .setLngLat([center.lon, center.lat])
       .addTo(map);
@@ -161,7 +199,7 @@ const SearchMap = ({
       if (lat == null || lon == null) continue;
 
       const siteId = `${site.orgId}:${site.siteId}`;
-      const el = createMarkerElement(site.label, siteId === selectedSiteId);
+      const el = createMarkerElement(site.label, siteId === selectedSiteId, t);
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         onSiteSelect?.(siteId);
@@ -190,7 +228,7 @@ const SearchMap = ({
       setShowSearchArea(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sites, center.lat, center.lon]);
+  }, [sites, center.lat, center.lon, lang]);
 
   // Keep marker selection styling in sync without rebuilding all markers.
   useEffect(() => {
@@ -246,7 +284,7 @@ const SearchMap = ({
       anchor: 'bottom',
     })
       .setLngLat([site.longitude, site.latitude])
-      .setHTML(buildPopupHtml({ ...site, directions: site.directions || directionsUrl(site) }))
+      .setHTML(buildPopupHtml({ ...site, directions: site.directions || directionsUrl(site) }, t))
       .addTo(map);
 
     popup.on('close', () => {
@@ -255,7 +293,7 @@ const SearchMap = ({
 
     popupRef.current = popup;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSiteId, sites]);
+  }, [selectedSiteId, sites, lang]);
 
   function handleSearchArea() {
     const map = mapRef.current;
@@ -281,7 +319,7 @@ const SearchMap = ({
           textAlign: 'center',
         }}
       >
-        Map unavailable — set <code style={{ fontSize: '0.85rem' }}>VITE_MAPBOX_ACCESS_TOKEN</code> in your <code style={{ fontSize: '0.85rem' }}>.env</code>
+        {t.mapUnavailable1}<code style={{ fontSize: '0.85rem' }}>VITE_MAPBOX_ACCESS_TOKEN</code>{t.mapUnavailable2}<code style={{ fontSize: '0.85rem' }}>.env</code>
       </div>
     );
   }
@@ -324,22 +362,22 @@ const SearchMap = ({
               cursor: 'pointer',
             }}
           >
-            <RotateCw size={15} /> Search this area
+            <RotateCw size={15} /> {t.searchThisArea}
           </button>
         </div>
       )}
 
       {/* Zoom + locate */}
       <div style={{ position: 'absolute', right: '16px', bottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 5 }}>
-        <button type="button" aria-label="Zoom in" style={CTRL_BTN} onClick={() => mapRef.current?.zoomIn()}>
+        <button type="button" aria-label={t.zoomIn} style={CTRL_BTN} onClick={() => mapRef.current?.zoomIn()}>
           <Plus size={18} />
         </button>
-        <button type="button" aria-label="Zoom out" style={CTRL_BTN} onClick={() => mapRef.current?.zoomOut()}>
+        <button type="button" aria-label={t.zoomOut} style={CTRL_BTN} onClick={() => mapRef.current?.zoomOut()}>
           <Minus size={18} />
         </button>
         <button
           type="button"
-          aria-label="Use my location"
+          aria-label={t.useMyLocation}
           style={{ ...CTRL_BTN, marginTop: '4px', color: 'var(--mb-primary)' }}
           onClick={() => onLocate?.()}
         >

@@ -1,5 +1,35 @@
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { Compass, Globe, Search, Home, ArrowLeft, Phone } from 'lucide-react';
+import { useLang } from '../../context/LangContext';
+
+const CONTENT = {
+  en: {
+    genericEyebrow: 'Error 404',
+    genericTitle: 'We can’t find that page',
+    genericMessage: 'The page you’re looking for may have moved, or the link might be broken. Let’s get you back to finding care.',
+    websiteEyebrow: 'Website unavailable',
+    websiteTitle: 'This clinic doesn’t have a website yet',
+    websiteMessage: (name) => `${name ? `${name} hasn’t` : 'This clinic hasn’t'} added a website. You can still reach them by phone or get directions from their profile.`,
+    backToClinic: 'Back to clinic',
+    searchOthers: 'Search other clinics',
+    findCare: 'Find care near you',
+    goHome: 'Go home',
+    phoneNote: 'Their phone number and directions are on the clinic page.',
+  },
+  es: {
+    genericEyebrow: 'Error 404',
+    genericTitle: 'No encontramos esa página',
+    genericMessage: 'Es posible que la página que buscas se haya movido o que el enlace esté roto. Volvamos a ayudarte a encontrar atención.',
+    websiteEyebrow: 'Sitio web no disponible',
+    websiteTitle: 'Esta clínica aún no tiene sitio web',
+    websiteMessage: (name) => `${name ? `${name} aún no ha` : 'Esta clínica aún no ha'} agregado un sitio web. Aún puedes comunicarte por teléfono u obtener indicaciones desde su perfil.`,
+    backToClinic: 'Volver a la clínica',
+    searchOthers: 'Buscar otras clínicas',
+    findCare: 'Encuentra atención cerca de ti',
+    goHome: 'Ir al inicio',
+    phoneNote: 'Su número de teléfono y las indicaciones están en la página de la clínica.',
+  },
+};
 
 /**
  * Branded not-found page, served at /404.
@@ -12,22 +42,23 @@ const NotFound = ({ variant = 'generic' }) => {
   const { id } = useParams();
   const { state } = useLocation();
   const clinicName = state?.clinicName;
+  const { lang } = useLang();
+  const t = CONTENT[lang];
 
   const config = {
     generic: {
       Icon: Compass,
-      eyebrow: 'Error 404',
+      eyebrow: t.genericEyebrow,
       showCode: true,
-      title: 'We can’t find that page',
-      message:
-        'The page you’re looking for may have moved, or the link might be broken. Let’s get you back to finding care.',
+      title: t.genericTitle,
+      message: t.genericMessage,
     },
     website: {
       Icon: Globe,
-      eyebrow: 'Website unavailable',
+      eyebrow: t.websiteEyebrow,
       showCode: false,
-      title: 'This clinic doesn’t have a website yet',
-      message: `${clinicName ? `${clinicName} hasn’t` : 'This clinic hasn’t'} added a website. You can still reach them by phone or get directions from their profile.`,
+      title: t.websiteTitle,
+      message: t.websiteMessage(clinicName),
     },
   }[variant] || {};
 
@@ -135,19 +166,19 @@ const NotFound = ({ variant = 'generic' }) => {
         {variant === 'website' ? (
           <>
             <Link to={`/clinic/${id}`} className="mb-btn mb-btn-lime" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <ArrowLeft size={16} /> Back to clinic
+              <ArrowLeft size={16} /> {t.backToClinic}
             </Link>
             <Link to="/search" className="mb-btn mb-btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <Search size={16} /> Search other clinics
+              <Search size={16} /> {t.searchOthers}
             </Link>
           </>
         ) : (
           <>
             <Link to="/search" className="mb-btn mb-btn-lime" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <Search size={16} /> Find care near you
+              <Search size={16} /> {t.findCare}
             </Link>
             <Link to="/" className="mb-btn mb-btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <Home size={16} /> Go home
+              <Home size={16} /> {t.goHome}
             </Link>
           </>
         )}
@@ -164,7 +195,7 @@ const NotFound = ({ variant = 'generic' }) => {
             color: 'var(--mb-text-muted)',
           }}
         >
-          <Phone size={14} /> Their phone number and directions are on the clinic page.
+          <Phone size={14} /> {t.phoneNote}
         </p>
       )}
     </div>

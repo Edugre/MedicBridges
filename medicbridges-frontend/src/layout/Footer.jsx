@@ -1,5 +1,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLang } from '../context/LangContext';
+
+const CONTENT = {
+  en: {
+    tagline: 'Helping people find low-cost clinics and affordable medicine in Miami-Dade, no matter their situation.',
+    patients: 'For Patients',
+    findCare: 'Find Care',
+    clinicMap: 'Clinic Map',
+    createProfile: 'Create Profile',
+    clinics: 'For Clinics',
+    whyMb: 'Why MedicBridges',
+    registerClinic: 'Register Your Clinic',
+    about: 'About',
+    privacy: 'Privacy & your data',
+    mission: 'Our Mission',
+    disclaimer: 'MedicBridges is a free information service and not a healthcare provider. Always confirm services, hours, and costs directly with the location. A non-commercial FIU student research project.',
+    copyright: '© 2026 MedicBridges — Miami, FL',
+  },
+  es: {
+    tagline: 'Ayudamos a las personas a encontrar clínicas de bajo costo y medicamentos accesibles en Miami-Dade, sin importar su situación.',
+    patients: 'Para Pacientes',
+    findCare: 'Buscar Atención',
+    clinicMap: 'Mapa de Clínicas',
+    createProfile: 'Crear Perfil',
+    clinics: 'Para Clínicas',
+    whyMb: 'Por qué MedicBridges',
+    registerClinic: 'Registra tu Clínica',
+    about: 'Acerca de',
+    privacy: 'Privacidad y tus datos',
+    mission: 'Nuestra Misión',
+    disclaimer: 'MedicBridges es un servicio de información gratuito y no es un proveedor de atención médica. Confirma siempre los servicios, horarios y costos directamente con el lugar. Un proyecto de investigación estudiantil no comercial de FIU.',
+    copyright: '© 2026 MedicBridges — Miami, FL',
+  },
+};
 
 const footerLinkStyle = {
   fontSize: '15px',
@@ -28,6 +62,8 @@ const FooterLink = ({ to, children }) => (
 );
 
 const Footer = () => {
+  const { lang } = useLang();
+  const t = CONTENT[lang];
   return (
     <footer style={{ marginTop: 'auto', background: 'var(--mb-bg-primary)' }}>
       <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '64px 32px 72px' }}>
@@ -49,35 +85,35 @@ const Footer = () => {
               </span>
             </div>
             <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: 'var(--mb-text-muted)', margin: 0, maxWidth: '280px' }}>
-              Helping people find low-cost clinics and affordable medicine in Miami-Dade, no matter their situation.
+              {t.tagline}
             </p>
           </div>
 
           {/* For Patients */}
           <div>
-            <div style={footerHeadingStyle}>For Patients</div>
+            <div style={footerHeadingStyle}>{t.patients}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <FooterLink to="/search">Find Care</FooterLink>
-              <FooterLink to="/map">Clinic Map</FooterLink>
-              <FooterLink to="/patient-signup">Create Profile</FooterLink>
+              <FooterLink to="/search">{t.findCare}</FooterLink>
+              <FooterLink to="/map">{t.clinicMap}</FooterLink>
+              <FooterLink to="/patient-signup">{t.createProfile}</FooterLink>
             </div>
           </div>
 
           {/* For Clinics */}
           <div>
-            <div style={footerHeadingStyle}>For Clinics</div>
+            <div style={footerHeadingStyle}>{t.clinics}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <FooterLink to="/for-clinics">Why MedicBridges</FooterLink>
-              <FooterLink to="/clinic-signup">Register Your Clinic</FooterLink>
+              <FooterLink to="/for-clinics">{t.whyMb}</FooterLink>
+              <FooterLink to="/clinic-signup">{t.registerClinic}</FooterLink>
             </div>
           </div>
 
           {/* About */}
           <div>
-            <div style={footerHeadingStyle}>About</div>
+            <div style={footerHeadingStyle}>{t.about}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <FooterLink to="/privacy">Privacy &amp; your data</FooterLink>
-              <FooterLink to="/problem">Our Mission</FooterLink>
+              <FooterLink to="/privacy">{t.privacy}</FooterLink>
+              <FooterLink to="/problem">{t.mission}</FooterLink>
             </div>
           </div>
         </div>
@@ -93,10 +129,9 @@ const Footer = () => {
           }}
         >
           <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--mb-text-disabled)', margin: 0, maxWidth: '800px' }}>
-            MedicBridges is a free information service and not a healthcare provider. Always confirm services, hours, and
-            costs directly with the location. A non-commercial FIU student research project.
+            {t.disclaimer}
           </p>
-          <div style={{ fontSize: '13px', color: 'var(--mb-text-disabled)' }}>© 2026 MedicBridges — Miami, FL</div>
+          <div style={{ fontSize: '13px', color: 'var(--mb-text-disabled)' }}>{t.copyright}</div>
         </div>
       </div>
 

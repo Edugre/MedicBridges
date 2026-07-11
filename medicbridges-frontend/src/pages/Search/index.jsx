@@ -15,6 +15,82 @@ import { humanizeCategory, formatAddress, formatDistance, directionsUrl } from '
 import ClinicCard from '../../components/ClinicCard';
 import SearchMap from '../../components/SearchMap';
 import SearchLoadingModal from '../../components/SearchLoadingModal';
+import { useLang } from '../../context/LangContext';
+
+const CONTENT = {
+  en: {
+    genericError: 'Something went wrong. Please try again.',
+    couldntLoad: "Couldn't load clinics",
+    tryAgain: 'Try again',
+    noneNearby: 'No clinics found nearby',
+    noneMatch: 'No clinics match your filters',
+    widenHint: 'Try widening the search radius or clearing some filters.',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    pageN: (n) => `Page ${n}`,
+    filters: 'Filters',
+    slidingScale: 'Sliding scale',
+    meds340b: '340B meds',
+    within: (km) => `Within ${km} km`,
+    slidingLabel: 'Sliding',
+    clinicLabel: 'Clinic',
+    autoExpand: (from, to) => `No clinics within ${from} km — showing the nearest within ${to} km.`,
+    filterPlaceholder: 'Filter by name or service',
+    findCareNear: (label) => `Find care near ${label}`,
+    searching: 'Searching…',
+    clinicsFoundSorted: (n) => `${n} clinic${n === 1 ? '' : 's'} found · sorted by distance`,
+    clinicsFound: (n) => `${n} clinic${n === 1 ? '' : 's'} found`,
+    showResults: 'Show results',
+    hideResults: 'Hide results',
+    views: { map: 'Map', list: 'List' },
+    filterResults: 'Filter results',
+    closeFilters: 'Close filters',
+    serviceType: 'Service type',
+    allTypes: 'All types',
+    searchRadius: 'Search radius',
+    slidingScaleFees: 'Sliding-scale fees',
+    onSite340b: 'On-site 340B medications',
+    resetAll: 'Reset all',
+    applyFilters: 'Apply filters',
+    fallbackArea: 'your area',
+  },
+  es: {
+    genericError: 'Algo salió mal. Inténtalo de nuevo.',
+    couldntLoad: 'No se pudieron cargar las clínicas',
+    tryAgain: 'Intentar de nuevo',
+    noneNearby: 'No se encontraron clínicas cercanas',
+    noneMatch: 'Ninguna clínica coincide con tus filtros',
+    widenHint: 'Prueba ampliar el radio de búsqueda o quitar algunos filtros.',
+    prevPage: 'Página anterior',
+    nextPage: 'Página siguiente',
+    pageN: (n) => `Página ${n}`,
+    filters: 'Filtros',
+    slidingScale: 'Escala móvil',
+    meds340b: 'Medicamentos 340B',
+    within: (km) => `Dentro de ${km} km`,
+    slidingLabel: 'Escala',
+    clinicLabel: 'Clínica',
+    autoExpand: (from, to) => `Sin clínicas dentro de ${from} km — mostrando las más cercanas dentro de ${to} km.`,
+    filterPlaceholder: 'Filtrar por nombre o servicio',
+    findCareNear: (label) => `Buscar atención cerca de ${label}`,
+    searching: 'Buscando…',
+    clinicsFoundSorted: (n) => `${n} clínica${n === 1 ? '' : 's'} encontrada${n === 1 ? '' : 's'} · ordenadas por distancia`,
+    clinicsFound: (n) => `${n} clínica${n === 1 ? '' : 's'} encontrada${n === 1 ? '' : 's'}`,
+    showResults: 'Mostrar resultados',
+    hideResults: 'Ocultar resultados',
+    views: { map: 'Mapa', list: 'Lista' },
+    filterResults: 'Filtrar resultados',
+    closeFilters: 'Cerrar filtros',
+    serviceType: 'Tipo de servicio',
+    allTypes: 'Todos los tipos',
+    searchRadius: 'Radio de búsqueda',
+    slidingScaleFees: 'Tarifas de escala móvil',
+    onSite340b: 'Medicamentos 340B en el lugar',
+    resetAll: 'Restablecer todo',
+    applyFilters: 'Aplicar filtros',
+    fallbackArea: 'tu área',
+  },
+};
 
 const RADIUS_OPTIONS = [1, 2, 5, 10, 20];
 const DEFAULT_RADIUS_KM = 5;
@@ -39,6 +115,8 @@ function firstSiteKey(result) {
 
 const Search = () => {
   const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
+  const { lang } = useLang();
+  const t = CONTENT[lang];
 
   const [services, setServices] = useState([]);
   const [filters, setFilters] = useState({
@@ -113,7 +191,7 @@ const Search = () => {
         latitude: site.latitude,
         longitude: site.longitude,
         name: site.name || org.name,
-        label: distLabel || (site.accepts_sliding_scale ? 'Sliding' : 'Clinic'),
+        label: distLabel || (site.accepts_sliding_scale ? t.slidingLabel : t.clinicLabel),
         address: formatAddress(site),
         distanceLabel: distLabel,
         phone: site.phone,
@@ -122,7 +200,7 @@ const Search = () => {
         directions: directionsUrl(site),
       };
     }),
-    [pageClinics],
+    [pageClinics, t],
   );
 
   const activeFilterCount = useMemo(() => {
@@ -170,7 +248,7 @@ const Search = () => {
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      setError(err.message || 'Something went wrong. Please try again.');
+      setError(err.message || t.genericError);
       setData(null);
     } finally {
       setLoading(false);
@@ -230,7 +308,7 @@ const Search = () => {
   }
 
   const desert = data?.meta?.healthcare_desert;
-  const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : 'your area');
+  const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : t.fallbackArea);
 
   const fitPadding = isMobile
     ? { top: 120, bottom: 290, left: 40, right: 40 }
@@ -243,9 +321,9 @@ const Search = () => {
       return (
         <div style={{ background: '#fff', border: '1px solid var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2rem 1.5rem' }}>
           <AlertCircle size={34} color="var(--mb-text-muted)" style={{ marginBottom: '0.75rem' }} />
-          <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem' }}>Couldn't load clinics</h3>
+          <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem' }}>{t.couldntLoad}</h3>
           <p style={{ color: 'var(--mb-text-muted)', marginBottom: '1rem', fontSize: '0.92rem' }}>{error}</p>
-          <button type="button" className="mb-btn mb-btn-lime" onClick={() => runSearch()}>Try again</button>
+          <button type="button" className="mb-btn mb-btn-lime" onClick={() => runSearch()}>{t.tryAgain}</button>
         </div>
       );
     }
@@ -254,10 +332,10 @@ const Search = () => {
         <div style={{ background: '#fff', border: '1px dashed var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
           <MapPin size={36} color="var(--mb-border)" style={{ marginBottom: '0.75rem' }} />
           <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem', color: 'var(--mb-text-muted)' }}>
-            {desert ? 'No clinics found nearby' : 'No clinics match your filters'}
+            {desert ? t.noneNearby : t.noneMatch}
           </h3>
           <p style={{ color: 'var(--mb-text-muted)', fontSize: '0.92rem' }}>
-            Try widening the search radius or clearing some filters.
+            {t.widenHint}
           </p>
         </div>
       );
@@ -312,15 +390,15 @@ const Search = () => {
     });
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap', padding: '4px 0 2px' }}>
-        <button type="button" aria-label="Previous page" disabled={safePage === 0} style={navBtn(safePage === 0)} onClick={() => goToPage(safePage - 1)}>
+        <button type="button" aria-label={t.prevPage} disabled={safePage === 0} style={navBtn(safePage === 0)} onClick={() => goToPage(safePage - 1)}>
           <ChevronLeft size={16} />
         </button>
         {nums.map((n) => (
-          <button key={n} type="button" aria-label={`Page ${n + 1}`} aria-current={n === safePage ? 'page' : undefined} style={numBtn(n === safePage)} onClick={() => goToPage(n)}>
+          <button key={n} type="button" aria-label={t.pageN(n + 1)} aria-current={n === safePage ? 'page' : undefined} style={numBtn(n === safePage)} onClick={() => goToPage(n)}>
             {n + 1}
           </button>
         ))}
-        <button type="button" aria-label="Next page" disabled={safePage === totalPages - 1} style={navBtn(safePage === totalPages - 1)} onClick={() => goToPage(safePage + 1)}>
+        <button type="button" aria-label={t.nextPage} disabled={safePage === totalPages - 1} style={navBtn(safePage === totalPages - 1)} onClick={() => goToPage(safePage + 1)}>
           <ChevronRight size={16} />
         </button>
       </div>
@@ -345,18 +423,18 @@ const Search = () => {
   const renderChips = () => (
     <>
       <button type="button" style={chip(false, true)} onClick={() => setFiltersOpen(true)}>
-        <SlidersHorizontal size={14} /> Filters
+        <SlidersHorizontal size={14} /> {t.filters}
         {activeFilterCount > 0 && ` (${activeFilterCount})`}
       </button>
       <button type="button" style={chip(filters.slidingScale)} onClick={() => toggleFilter({ slidingScale: !filters.slidingScale })}>
-        Sliding scale
+        {t.slidingScale}
       </button>
       <button type="button" style={chip(filters.has340b)} onClick={() => toggleFilter({ has340b: !filters.has340b })}>
-        340B meds
+        {t.meds340b}
       </button>
       <div style={{ position: 'relative' }}>
         <button type="button" style={chip(filters.radiusKm !== DEFAULT_RADIUS_KM)} onClick={() => setRadiusMenuOpen((o) => !o)}>
-          Within {filters.radiusKm} km <ChevronDown size={13} strokeWidth={2.2} />
+          {t.within(filters.radiusKm)} <ChevronDown size={13} strokeWidth={2.2} />
         </button>
         {radiusMenuOpen && (
           <div
@@ -392,7 +470,7 @@ const Search = () => {
                   cursor: 'pointer',
                 }}
               >
-                Within {km} km
+                {t.within(km)}
               </button>
             ))}
           </div>
@@ -430,7 +508,7 @@ const Search = () => {
       }}
     >
       <MapPin size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
-      <span>No clinics within {autoExpanded.from} km — showing the nearest within {autoExpanded.to} km.</span>
+      <span>{t.autoExpand(autoExpanded.from, autoExpanded.to)}</span>
     </div>
   );
 
@@ -439,7 +517,7 @@ const Search = () => {
       <SearchIcon size={16} color="var(--mb-text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
       <input
         type="text"
-        placeholder="Filter by name or service"
+        placeholder={t.filterPlaceholder}
         value={textQuery}
         onChange={(e) => { setTextQuery(e.target.value); setPage(0); }}
         style={{
@@ -498,10 +576,10 @@ const Search = () => {
           >
             <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid var(--mb-border-soft)' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--mb-text-primary)', letterSpacing: '-0.01em', margin: 0 }}>
-                Find care near {locationLabel}
+                {t.findCareNear(locationLabel)}
               </h2>
               <div style={{ fontSize: '12.5px', color: 'var(--mb-text-muted)', marginTop: '2px' }}>
-                {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found · sorted by distance`}
+                {loading ? t.searching : t.clinicsFoundSorted(clinics.length)}
               </div>
               <div style={{ marginTop: '12px' }}>{searchField}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '12px' }}>
@@ -527,7 +605,7 @@ const Search = () => {
           {/* Collapse handle */}
           <button
             type="button"
-            aria-label={drawerCollapsed ? 'Show results' : 'Hide results'}
+            aria-label={drawerCollapsed ? t.showResults : t.hideResults}
             onClick={() => setDrawerCollapsed((c) => !c)}
             style={{
               position: 'absolute',
@@ -562,7 +640,7 @@ const Search = () => {
             <div style={{ flex: 1, boxShadow: '0 4px 14px rgba(0,0,0,0.1)', borderRadius: '13px' }}>{searchField}</div>
             <button
               type="button"
-              aria-label="Filters"
+              aria-label={t.filters}
               onClick={() => setFiltersOpen(true)}
               style={{
                 width: '42px',
@@ -622,14 +700,14 @@ const Search = () => {
                 setSheetCollapsed(dy < 0); // swipe down → reveal, swipe up → hide
               }}
               aria-expanded={!sheetCollapsed}
-              aria-label={sheetCollapsed ? 'Show results' : 'Hide results'}
+              aria-label={sheetCollapsed ? t.showResults : t.hideResults}
               style={{ display: 'block', width: '100%', padding: '12px 0 10px', background: 'none', border: 'none', cursor: 'pointer', touchAction: 'none' }}
             >
               <span style={{ display: 'block', width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '0 auto' }} />
             </button>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px 10px' }}>
               <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)' }}>
-                {loading ? 'Searching…' : `${clinics.length} clinic${clinics.length === 1 ? '' : 's'} found`}
+                {loading ? t.searching : t.clinicsFound(clinics.length)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ background: '#F1ECE0', borderRadius: '999px', padding: '3px', display: 'flex', gap: '2px' }}>
@@ -645,12 +723,11 @@ const Search = () => {
                         borderRadius: '999px',
                         border: 'none',
                         cursor: 'pointer',
-                        textTransform: 'capitalize',
                         background: mobileView === v ? '#fff' : 'transparent',
                         color: mobileView === v ? 'var(--mb-text-primary)' : 'var(--mb-text-muted)',
                       }}
                     >
-                      {v}
+                      {t.views[v]}
                     </button>
                   ))}
                 </div>
@@ -658,7 +735,7 @@ const Search = () => {
                   type="button"
                   onClick={() => setSheetCollapsed((c) => !c)}
                   aria-expanded={!sheetCollapsed}
-                  aria-label={sheetCollapsed ? 'Show results' : 'Hide results'}
+                  aria-label={sheetCollapsed ? t.showResults : t.hideResults}
                   style={{ width: '30px', height: '30px', flexShrink: 0, borderRadius: '8px', background: '#F1ECE0', border: 'none', color: 'var(--mb-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <ChevronDown size={16} style={{ transform: sheetCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -696,7 +773,7 @@ const Search = () => {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Filter results"
+            aria-label={t.filterResults}
             onClick={(e) => e.stopPropagation()}
             style={{
               background: '#fff',
@@ -709,25 +786,25 @@ const Search = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <SlidersHorizontal size={18} /> Filter results
+                <SlidersHorizontal size={18} /> {t.filterResults}
               </h2>
-              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters" style={{ background: 'none', border: 'none', color: 'var(--mb-text-muted)', cursor: 'pointer', padding: '4px' }}>
+              <button type="button" onClick={() => setFiltersOpen(false)} aria-label={t.closeFilters} style={{ background: 'none', border: 'none', color: 'var(--mb-text-muted)', cursor: 'pointer', padding: '4px' }}>
                 <X size={20} />
               </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label className="mb-label">Service type</label>
+                <label className="mb-label">{t.serviceType}</label>
                 <select className="mb-select" value={filters.serviceCategory} onChange={(e) => setFilters((f) => ({ ...f, serviceCategory: e.target.value }))}>
-                  <option value="">All types</option>
+                  <option value="">{t.allTypes}</option>
                   {categories.map((c) => (
                     <option key={c} value={c}>{humanizeCategory(c)}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-label">Search radius</label>
+                <label className="mb-label">{t.searchRadius}</label>
                 <select className="mb-select" value={filters.radiusKm} onChange={(e) => setFilters((f) => ({ ...f, radiusKm: Number(e.target.value) }))}>
                   {RADIUS_OPTIONS.map((km) => (
                     <option key={km} value={km}>{km} km</option>
@@ -737,21 +814,21 @@ const Search = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 <label className="mb-checkbox-label" style={{ marginBottom: 0 }}>
                   <input type="checkbox" checked={filters.slidingScale} onChange={(e) => setFilters((f) => ({ ...f, slidingScale: e.target.checked }))} />
-                  Sliding-scale fees
+                  {t.slidingScaleFees}
                 </label>
                 <label className="mb-checkbox-label" style={{ marginBottom: 0 }}>
                   <input type="checkbox" checked={filters.has340b} onChange={(e) => setFilters((f) => ({ ...f, has340b: e.target.checked }))} />
-                  On-site 340B medications
+                  {t.onSite340b}
                 </label>
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.5rem' }}>
               <button type="button" className="mb-btn mb-btn-outline" style={{ flex: 1, height: '46px' }} onClick={resetFilters}>
-                Reset all
+                {t.resetAll}
               </button>
               <button type="button" className="mb-btn mb-btn-lime" style={{ flex: 1, height: '46px' }} onClick={handleApplyFilters} disabled={loading}>
-                {loading ? 'Searching…' : 'Apply filters'}
+                {loading ? t.searching : t.applyFilters}
               </button>
             </div>
           </div>

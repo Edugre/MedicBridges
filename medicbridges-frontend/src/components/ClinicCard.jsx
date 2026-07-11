@@ -1,6 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Pill, Navigation } from 'lucide-react';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../lib/format';
+import { useLang } from '../context/LangContext';
+
+const CONTENT = {
+  en: { clinic: 'Clinic', meds340b: '340B meds', slidingScale: 'Sliding scale', call: 'Call', directions: 'Directions' },
+  es: { clinic: 'Clínica', meds340b: 'Medicamentos 340B', slidingScale: 'Escala móvil', call: 'Llamar', directions: 'Indicaciones' },
+};
 
 const badgeBase = {
   display: 'inline-flex',
@@ -33,6 +39,8 @@ const actionBase = {
  */
 const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, width }) => {
   const navigate = useNavigate();
+  const { lang } = useLang();
+  const t = CONTENT[lang];
   const distance = formatDistance(site.distance_m ?? org.distance_m);
   const address = formatAddress(site);
   const categories = (site.service_categories || []).slice(0, 4);
@@ -82,7 +90,7 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
               ...(width ? { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : null),
             }}
           >
-            {site.name || org.name || 'Clinic'}
+            {site.name || org.name || t.clinic}
           </div>
           {address && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--mb-text-secondary)', fontSize: '12.5px', marginTop: '3px' }}>
@@ -102,12 +110,12 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
         <div style={{ display: 'flex', flexWrap: width ? 'nowrap' : 'wrap', gap: '6px', overflow: width ? 'hidden' : undefined }}>
           {org.has_340b && (
             <span style={{ ...badgeBase, background: 'var(--mb-honey-soft)', color: '#B87814', border: '1px solid #F2E0C2' }}>
-              <Pill size={11} /> 340B meds
+              <Pill size={11} /> {t.meds340b}
             </span>
           )}
           {site.accepts_sliding_scale && (
             <span style={{ ...badgeBase, background: 'var(--mb-bg-sage)', color: 'var(--mb-primary)' }}>
-              Sliding scale
+              {t.slidingScale}
             </span>
           )}
           {categories.map((c) => (
@@ -133,7 +141,7 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
             pointerEvents: site.phone ? 'auto' : 'none',
           }}
         >
-          <Phone size={13} /> Call
+          <Phone size={13} /> {t.call}
         </a>
         <a
           href={directions || undefined}
@@ -150,7 +158,7 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
             pointerEvents: directions ? 'auto' : 'none',
           }}
         >
-          <Navigation size={13} /> Directions
+          <Navigation size={13} /> {t.directions}
         </a>
       </div>
     </div>
