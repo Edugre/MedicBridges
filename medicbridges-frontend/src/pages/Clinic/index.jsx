@@ -7,6 +7,70 @@ import {
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
 import LocationMap from '../../components/LocationMap';
+import { useLang } from '../../context/LangContext';
+
+const CONTENT = {
+  en: {
+    backToResults: 'Back to search results',
+    loading: 'Loading clinic details…',
+    loadError: 'We couldn’t load this clinic. Please try again in a moment.',
+    backToSearch: 'Back to search',
+    meds340b: '340B meds',
+    slidingScale: 'Sliding scale',
+    clinic: 'Clinic',
+    away: (d) => ` · ${d} away`,
+    getDirections: 'Get directions',
+    directions: 'Directions',
+    call: 'Call',
+    website: 'Website',
+    saved: 'Saved',
+    saveClinic: 'Save clinic',
+    servicesOffered: 'Services offered',
+    aboutOrg: 'About the organization',
+    operatedByPre: 'Operated by ',
+    operatedByPost: '.',
+    hrsaGrant: (n) => `HRSA Grant #${n}`,
+    otherLocations: (n) => `Other locations (${n})`,
+    atAGlance: 'At a glance',
+    slidingScaleFees: 'Sliding-scale fees',
+    onSite340b: 'On-site 340B pharmacy',
+    yes: 'Yes',
+    contact: 'Contact',
+    phone: 'Phone',
+    address: 'Address',
+    reportProblem: 'Report a problem',
+  },
+  es: {
+    backToResults: 'Volver a los resultados',
+    loading: 'Cargando detalles de la clínica…',
+    loadError: 'No pudimos cargar esta clínica. Inténtalo de nuevo en un momento.',
+    backToSearch: 'Volver a la búsqueda',
+    meds340b: 'Medicamentos 340B',
+    slidingScale: 'Escala móvil',
+    clinic: 'Clínica',
+    away: (d) => ` · a ${d}`,
+    getDirections: 'Obtener indicaciones',
+    directions: 'Indicaciones',
+    call: 'Llamar',
+    website: 'Sitio web',
+    saved: 'Guardada',
+    saveClinic: 'Guardar clínica',
+    servicesOffered: 'Servicios ofrecidos',
+    aboutOrg: 'Sobre la organización',
+    operatedByPre: 'Operada por ',
+    operatedByPost: '.',
+    hrsaGrant: (n) => `Subvención HRSA #${n}`,
+    otherLocations: (n) => `Otras ubicaciones (${n})`,
+    atAGlance: 'De un vistazo',
+    slidingScaleFees: 'Tarifas de escala móvil',
+    onSite340b: 'Farmacia 340B en el lugar',
+    yes: 'Sí',
+    contact: 'Contacto',
+    phone: 'Teléfono',
+    address: 'Dirección',
+    reportProblem: 'Reportar un problema',
+  },
+};
 
 // A missing clinic, a 404, or a malformed id (e.g. not a valid UUID) all mean
 // "this clinic doesn't exist" from the user's point of view.
@@ -21,6 +85,8 @@ function isNotFound(err) {
 
 const Clinic = () => {
   const { id } = useParams();
+  const { lang } = useLang();
+  const t = CONTENT[lang];
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,8 +108,9 @@ const Clinic = () => {
         if (isNotFound(err)) {
           setNotFound(true);
         } else {
-          // Never surface raw backend/DB errors to users.
-          setError('We couldn’t load this clinic. Please try again in a moment.');
+          // Never surface raw backend/DB errors to users. Flag the error and
+          // render the (localized) message at display time.
+          setError(true);
         }
       })
       .finally(() => setLoading(false));
@@ -65,20 +132,20 @@ const Clinic = () => {
   return (
     <div className="clinic-page" style={{ maxWidth: '1180px', margin: '0 auto', padding: '26px 34px 38px', animation: 'fadeIn 0.6s ease-out' }}>
       <Link to="/search" className="clinic-back" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', color: 'var(--mb-text-secondary)', fontSize: '13.5px', fontWeight: 500, marginBottom: '18px' }}>
-        <ArrowLeft size={17} /> Back to search results
+        <ArrowLeft size={17} /> {t.backToResults}
       </Link>
 
       {loading && (
         <div className="dcard" style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--mb-text-muted)' }}>
-          Loading clinic details…
+          {t.loading}
         </div>
       )}
 
       {!loading && error && (
         <div className="dcard" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
           <AlertCircle size={40} color="var(--mb-text-muted)" style={{ marginBottom: '1rem' }} />
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{error}</h2>
-          <Link to="/search" className="mb-btn mb-btn-secondary" style={{ marginTop: '1rem' }}>Back to search</Link>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>{t.loadError}</h2>
+          <Link to="/search" className="mb-btn mb-btn-secondary" style={{ marginTop: '1rem' }}>{t.backToSearch}</Link>
         </div>
       )}
 
@@ -89,14 +156,14 @@ const Clinic = () => {
             <div className="clinic-hero-body" style={{ flex: 1, minWidth: 0, padding: '26px 28px', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '12px' }}>
                 {org.has_340b && (
-                  <span className="badge b-honey"><Pill size={12} /> 340B meds</span>
+                  <span className="badge b-honey"><Pill size={12} /> {t.meds340b}</span>
                 )}
-                {slidingScale && <span className="badge b-sage">Sliding scale</span>}
+                {slidingScale && <span className="badge b-sage">{t.slidingScale}</span>}
                 {primary?.center_type && <span className="badge b-neu">{primary.center_type}</span>}
               </div>
 
               <h1 style={{ fontSize: '29px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: '8px' }}>
-                {primary?.name || org.name || 'Clinic'}
+                {primary?.name || org.name || t.clinic}
               </h1>
 
               {address && (
@@ -104,7 +171,7 @@ const Clinic = () => {
                   <MapPin size={16} color="var(--mb-primary)" style={{ flexShrink: 0 }} />
                   <span>{address}
                     {primary.distance_m != null && (
-                      <span style={{ color: 'var(--mb-text-muted)' }}> · {formatDistance(primary.distance_m)} away</span>
+                      <span style={{ color: 'var(--mb-text-muted)' }}>{t.away(formatDistance(primary.distance_m))}</span>
                     )}
                   </span>
                 </div>
@@ -113,17 +180,17 @@ const Clinic = () => {
               <div className="clinic-actions" style={{ display: 'flex', gap: '10px', marginTop: '22px', flexWrap: 'wrap' }}>
                 {directions && (
                   <a className="abtn teal abtn-directions" href={directions} target="_blank" rel="noreferrer">
-                    <Send size={15} /> <span className="abtn-label-full">Get directions</span><span className="abtn-label-short">Directions</span>
+                    <Send size={15} /> <span className="abtn-label-full">{t.getDirections}</span><span className="abtn-label-short">{t.directions}</span>
                   </a>
                 )}
                 {primary?.phone && (
                   <a className="abtn abtn-call" href={`tel:${primary.phone}`}>
-                    <Phone size={15} /> <span className="abtn-label-full">{primary.phone}</span><span className="abtn-label-short">Call</span>
+                    <Phone size={15} /> <span className="abtn-label-full">{primary.phone}</span><span className="abtn-label-short">{t.call}</span>
                   </a>
                 )}
                 {website ? (
                   <a className="abtn abtn-website" href={website} target="_blank" rel="noreferrer">
-                    <Globe size={15} /> Website
+                    <Globe size={15} /> {t.website}
                   </a>
                 ) : (
                   <Link
@@ -131,14 +198,14 @@ const Clinic = () => {
                     to={`/clinic/${id}/no-website`}
                     state={{ clinicName: primary?.name || org.name }}
                   >
-                    <Globe size={15} /> Website
+                    <Globe size={15} /> {t.website}
                   </Link>
                 )}
                 <button
                   type="button"
                   className="abtn abtn-save"
                   aria-pressed={saved}
-                  aria-label={saved ? 'Saved' : 'Save clinic'}
+                  aria-label={saved ? t.saved : t.saveClinic}
                   onClick={() => setSaved((s) => !s)}
                   style={{ width: '44px', padding: 0, color: saved ? 'var(--mb-primary)' : undefined }}
                 >
@@ -163,7 +230,7 @@ const Clinic = () => {
             <div className="clinic-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '22px' }}>
               {allCategories.length > 0 && (
                 <div className="dcard">
-                  <div className="sech">Services offered</div>
+                  <div className="sech">{t.servicesOffered}</div>
                   <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 28px' }}>
                     {allCategories.map((service) => (
                       <div key={service} className="svc">
@@ -176,13 +243,13 @@ const Clinic = () => {
               )}
 
               <div className="dcard">
-                <div className="sech"><Building2 size={18} color="var(--mb-primary)" /> About the organization</div>
+                <div className="sech"><Building2 size={18} color="var(--mb-primary)" /> {t.aboutOrg}</div>
                 <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: 'var(--mb-text-secondary)' }}>
-                  Operated by <strong style={{ color: 'var(--mb-text-primary)' }}>{org.name || '—'}</strong>.
+                  {t.operatedByPre}<strong style={{ color: 'var(--mb-text-primary)' }}>{org.name || '—'}</strong>{t.operatedByPost}
                 </p>
                 {org.grant_number && (
                   <div style={{ display: 'flex', gap: '28px', marginTop: '16px', fontSize: '13px', color: 'var(--mb-text-muted)' }}>
-                    <span>HRSA Grant #{org.grant_number}</span>
+                    <span>{t.hrsaGrant(org.grant_number)}</span>
                   </div>
                 )}
               </div>
@@ -197,7 +264,7 @@ const Clinic = () => {
                     style={{ marginBottom: locationsOpen ? '16px' : 0 }}
                   >
                     <MapPin size={18} color="var(--mb-primary)" />
-                    <span style={{ flex: 1, textAlign: 'left' }}>Other locations ({sites.length})</span>
+                    <span style={{ flex: 1, textAlign: 'left' }}>{t.otherLocations(sites.length)}</span>
                     <ChevronDown size={18} className="loc-chevron" style={{ transform: locationsOpen ? 'rotate(180deg)' : 'none' }} />
                   </button>
                   {locationsOpen && sites.map((s) => (
@@ -223,30 +290,30 @@ const Clinic = () => {
             <div className="clinic-rail" style={{ width: '330px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '22px' }}>
               {(slidingScale || org.has_340b) && (
                 <div className="dcard glance-card">
-                  <div className="sech">At a glance</div>
+                  <div className="sech">{t.atAGlance}</div>
                   {slidingScale && (
-                    <div className="glance"><span style={{ color: '#3B4642' }}>Sliding-scale fees</span><span className="yes"><Check size={15} strokeWidth={3} /> Yes</span></div>
+                    <div className="glance"><span style={{ color: '#3B4642' }}>{t.slidingScaleFees}</span><span className="yes"><Check size={15} strokeWidth={3} /> {t.yes}</span></div>
                   )}
                   {org.has_340b && (
-                    <div className="glance"><span style={{ color: '#3B4642' }}>On-site 340B pharmacy</span><span className="yes"><Check size={15} strokeWidth={3} /> Yes</span></div>
+                    <div className="glance"><span style={{ color: '#3B4642' }}>{t.onSite340b}</span><span className="yes"><Check size={15} strokeWidth={3} /> {t.yes}</span></div>
                   )}
                 </div>
               )}
 
               {(primary?.phone || website || address) && (
                 <div className="dcard">
-                  <div className="sech">Contact</div>
+                  <div className="sech">{t.contact}</div>
                   {primary?.phone && (
                     <a className="kv" href={`tel:${primary.phone}`}>
                       <span className="ic"><Phone size={17} /></span>
-                      <div><div className="lab">Phone</div><div className="val">{primary.phone}</div></div>
+                      <div><div className="lab">{t.phone}</div><div className="val">{primary.phone}</div></div>
                     </a>
                   )}
                   {website && (
                     <a className="kv" href={website} target="_blank" rel="noreferrer">
                       <span className="ic"><Globe size={17} /></span>
                       <div>
-                        <div className="lab">Website</div>
+                        <div className="lab">{t.website}</div>
                         <div className="val" style={{ color: 'var(--mb-primary)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                           {website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} <ExternalLink size={13} />
                         </div>
@@ -256,7 +323,7 @@ const Clinic = () => {
                   {address && (
                     <div className="kv">
                       <span className="ic"><MapPin size={17} /></span>
-                      <div><div className="lab">Address</div><div className="val">{address}</div></div>
+                      <div><div className="lab">{t.address}</div><div className="val">{address}</div></div>
                     </div>
                   )}
                 </div>
@@ -269,7 +336,7 @@ const Clinic = () => {
                 disabled
                 title="Coming soon"
               >
-                <Flag size={16} /> Report a problem
+                <Flag size={16} /> {t.reportProblem}
               </button>
             </div>
           </div>

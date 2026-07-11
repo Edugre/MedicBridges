@@ -17,16 +17,22 @@ const disabledBtnStyle = {
 };
 
 const NAV_LINKS = [
-  { to: '/search', label: 'Find Care' },
-  { to: '/map', label: 'Map' },
-  { to: '/problem', label: 'Our Mission' },
-  { to: '/for-clinics', label: 'For Clinics' },
+  { to: '/search', en: 'Find Care', es: 'Buscar Atención' },
+  { to: '/map', en: 'Map', es: 'Mapa' },
+  { to: '/problem', en: 'Our Mission', es: 'Nuestra Misión' },
+  { to: '/for-clinics', en: 'For Clinics', es: 'Para Clínicas' },
 ];
+
+const CONTENT = {
+  en: { login: 'Log in', findCare: 'Find care' },
+  es: { login: 'Iniciar sesión', findCare: 'Buscar atención' },
+};
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openModal } = useSearchModal();
   const { lang, setLang } = useLang();
+  const t = CONTENT[lang];
 
   return (
     <header
@@ -68,7 +74,7 @@ const Navbar = () => {
               onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--mb-primary)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--mb-text-secondary)'; }}
             >
-              {link.label}
+              {link[lang]}
             </Link>
           ))}
         </nav>
@@ -92,7 +98,7 @@ const Navbar = () => {
             className="mb-btn mb-btn-outline"
             style={{ height: '42px', padding: '0 18px', borderRadius: '11px', fontSize: '18px', fontWeight: 500, ...disabledBtnStyle }}
           >
-            Log in
+            {t.login}
           </button>
           <button
             type="button"
@@ -100,7 +106,7 @@ const Navbar = () => {
             className="mb-btn mb-btn-lime"
             style={{ height: '42px', padding: '0 21px', borderRadius: '11px', fontSize: '18px', fontWeight: 500 }}
           >
-            Find care
+            {t.findCare}
           </button>
         </div>
 
@@ -142,7 +148,7 @@ const Navbar = () => {
               onClick={() => setMobileOpen(false)}
               style={{ ...navLinkStyle, padding: '0.85rem 0', borderBottom: '1px solid var(--mb-border-soft)' }}
             >
-              {link.label}
+              {link[lang]}
             </Link>
           ))}
           <button
@@ -152,7 +158,7 @@ const Navbar = () => {
             className="mb-btn mb-btn-outline"
             style={{ marginTop: '0.75rem', fontSize: '18px', fontWeight: 500, ...disabledBtnStyle }}
           >
-            Log in
+            {t.login}
           </button>
           <button
             type="button"
@@ -160,7 +166,7 @@ const Navbar = () => {
             className="mb-btn mb-btn-lime"
             style={{ marginTop: '0.75rem', fontSize: '18px', fontWeight: 500 }}
           >
-            Find care
+            {t.findCare}
           </button>
         </div>
       )}
