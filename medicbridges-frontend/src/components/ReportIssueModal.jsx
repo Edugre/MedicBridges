@@ -5,6 +5,9 @@ import {
 } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { submitReport } from '../api';
+import Turnstile from './Turnstile';
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 
 // ---------------------------------------------------------------------------
 // Localized copy. Mirrors the app-wide en/es pattern (see Clinic/index.jsx).
@@ -28,6 +31,8 @@ const CONTENT = {
     submit: 'Submit report',
     submitting: 'Submitting…',
     submitFailed: "Something went wrong submitting your report. Please try again.",
+    captchaFailed: "Captcha verification failed. Please complete the check and try again.",
+    verifyHuman: 'Confirm you are human',
     // Step 2A — wrong info
     typeLabels: {
       wrong_info: 'Wrong info',
@@ -99,6 +104,8 @@ const CONTENT = {
     submit: 'Enviar reporte',
     submitting: 'Enviando…',
     submitFailed: 'Algo salió mal al enviar tu reporte. Inténtalo de nuevo.',
+    captchaFailed: 'La verificación de captcha falló. Completa la verificación e inténtalo de nuevo.',
+    verifyHuman: 'Confirma que eres humano',
     typeLabels: {
       wrong_info: 'Info incorrecta',
       closed_moved: 'Cerrada o reubicada',
@@ -183,6 +190,8 @@ const initialState = {
   submitting: false,
   submitError: null,
   ticketId: null,
+  captchaToken: null,
+  captchaNonce: 0, // bumped to force a fresh Turnstile widget after a failed submit
 };
 
 // ---------------------------------------------------------------------------
@@ -300,6 +309,8 @@ const ReportIssueModal = ({
   // Per-step "can advance" gate.
   const canSubmit = useMemo(() => {
     if (emailError) return false;
+    // When captcha is enabled, a valid token is required to submit.
+    if (TURNSTILE_SITE_KEY && !s.captchaToken) return false;
     switch (s.issueType) {
       case 'wrong_info':
         return s.wrongFields.length > 0
@@ -364,6 +375,8 @@ const ReportIssueModal = ({
       }));
     }
 
+    if (TURNSTILE_SITE_KEY && s.captchaToken) payload.captcha_token = s.captchaToken;
+
     return payload;
   };
 
@@ -373,8 +386,15 @@ const ReportIssueModal = ({
     try {
       const res = await submitReport(buildPayload());
       set({ submitting: false, ticketId: res.reference, step: 3 });
-    } catch {
-      set({ submitting: false, submitError: t.submitFailed });
+    } catch (err) {
+      // A Turnstile token is single-use; on any failure discard it and remount
+      // the widget (bump nonce) so the user gets a fresh challenge to retry.
+      set({
+        submitting: false,
+        submitError: err?.code === 'captcha_failed' ? t.captchaFailed : t.submitFailed,
+        captchaToken: null,
+        captchaNonce: s.captchaNonce + 1,
+      });
     }
   };
 
@@ -690,6 +710,18 @@ const ReportIssueModal = ({
                   />
                 </>
               )}
+
+              {s.step === 2 && TURNSTILE_SITE_KEY && (
+                <div className="ri-captcha">
+                  <span className="ri-flabel">{t.verifyHuman}</span>
+                  <Turnstile
+                    key={s.captchaNonce}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onVerify={(token) => set({ captchaToken: token })}
+                    onExpire={() => set({ captchaToken: null })}
+                  />
+                </div>
+              )}
             </div>
 
             {s.submitError && (
@@ -865,6 +897,7 @@ const ReportIssueModal = ({
         .ri-anon-ic { color: var(--mb-primary); flex-shrink: 0; margin-top: 1px; }
         .ri-anon-t { font-size: 12.5px; line-height: 1.5; color: #3B4642; }
 
+        .ri-captcha { margin-top: 18px; }
         .ri-submit-error {
           padding: 11px 26px; background: #F7E9E7; color: #B04A3A;
           font-size: 12.5px; font-weight: 600; line-height: 1.4;

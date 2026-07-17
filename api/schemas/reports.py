@@ -66,6 +66,8 @@ class ReportSubmission(BaseModel):
     reporter_organization: str | None = None
     reporter_email: str | None = None
     fields: list[ReportFieldInput] = Field(default_factory=list)
+    # Cloudflare Turnstile token; required only when captcha is enabled server-side.
+    captcha_token: str | None = None
 
     @field_validator("reporter_email")
     @classmethod

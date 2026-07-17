@@ -58,3 +58,10 @@ class UpstreamError(APIError):
 
     status_code = 502
     error_code = "upstream_error"
+
+
+class CaptchaFailedError(APIError):
+    """The captcha token was missing, expired, or rejected by the provider."""
+
+    status_code = 403
+    error_code = "captcha_failed"
