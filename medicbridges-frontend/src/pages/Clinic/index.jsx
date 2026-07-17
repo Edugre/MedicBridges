@@ -345,6 +345,8 @@ const Clinic = () => {
             isOpen={reportOpen}
             onClose={() => setReportOpen(false)}
             clinicName={primary?.name || org.name}
+            subjectType="site"
+            subjectKey={primary?.site_id}
             current={{
               phone: primary?.phone,
               address,

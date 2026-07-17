@@ -4,6 +4,7 @@ import {
   Check, ArrowRight, ArrowLeft, X, Lock, Ticket,
 } from 'lucide-react';
 import { useLang } from '../context/LangContext';
+import { submitReport } from '../api';
 
 // ---------------------------------------------------------------------------
 // Localized copy. Mirrors the app-wide en/es pattern (see Clinic/index.jsx).
@@ -26,6 +27,7 @@ const CONTENT = {
     back: 'Back',
     submit: 'Submit report',
     submitting: 'Submitting…',
+    submitFailed: "Something went wrong submitting your report. Please try again.",
     // Step 2A — wrong info
     typeLabels: {
       wrong_info: 'Wrong info',
@@ -96,6 +98,7 @@ const CONTENT = {
     back: 'Atrás',
     submit: 'Enviar reporte',
     submitting: 'Enviando…',
+    submitFailed: 'Algo salió mal al enviar tu reporte. Inténtalo de nuevo.',
     typeLabels: {
       wrong_info: 'Info incorrecta',
       closed_moved: 'Cerrada o reubicada',
@@ -153,6 +156,17 @@ const FEEDBACK_ORDER = ['accessibility', 'staff_service', 'wait_times', 'somethi
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Modal issue type + closed state -> DB report_category enum.
+const CATEGORY_FOR = (issueType, closedState) => {
+  if (issueType === 'wrong_info') return 'wrong_info';
+  if (issueType === 'closed_moved') return closedState === 'closed' ? 'site_closed' : 'site_moved';
+  if (issueType === 'duplicate') return 'duplicate';
+  return 'general_feedback';
+};
+
+// Modal feedback category -> DB feedback_topic enum ('something_else' -> 'other').
+const TOPIC_FOR = (cat) => (cat === 'something_else' ? 'other' : cat);
+
 const initialState = {
   step: 1,
   issueType: null,
@@ -167,6 +181,7 @@ const initialState = {
   organization: '',
   email: '',
   submitting: false,
+  submitError: null,
   ticketId: null,
 };
 
@@ -243,7 +258,14 @@ function IdentityFields({ t, name, organization, email, emailError, onChange }) 
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-const ReportIssueModal = ({ isOpen, onClose, clinicName, current = {} }) => {
+const ReportIssueModal = ({
+  isOpen,
+  onClose,
+  clinicName,
+  current = {},
+  subjectType = 'site',
+  subjectKey,
+}) => {
   const { lang } = useLang();
   const t = CONTENT[lang];
   const [s, setS] = useState(initialState);
@@ -314,15 +336,46 @@ const ReportIssueModal = ({ isOpen, onClose, clinicName, current = {} }) => {
     set({ step: 2 });
   };
 
-  const handleSubmit = () => {
+  const buildPayload = () => {
+    const category = CATEGORY_FOR(s.issueType, s.closedState);
+    const payload = {
+      subject_type: subjectType,
+      subject_key: subjectKey,
+      category,
+      reporter_name: s.name.trim() || undefined,
+      reporter_organization: s.organization.trim() || undefined,
+      reporter_email: s.email.trim() || undefined,
+    };
+
+    if (category === 'site_moved') payload.new_address = s.newAddress.trim();
+
+    if (s.issueType === 'feedback') {
+      payload.description = s.feedbackText.trim();
+      if (s.feedbackCategory) payload.feedback_topic = TOPIC_FOR(s.feedbackCategory);
+    } else if (s.note.trim()) {
+      payload.description = s.note.trim();
+    }
+
+    if (s.issueType === 'wrong_info') {
+      payload.fields = s.wrongFields.map((key) => ({
+        field: key,
+        currently_listed: currentValueFor(key) || undefined,
+        should_be: (s.wrongValues[key] || '').trim(),
+      }));
+    }
+
+    return payload;
+  };
+
+  const handleSubmit = async () => {
     if (!canSubmit || s.submitting) return;
-    set({ submitting: true });
-    // No reporting endpoint exists yet — simulate the POST and surface a
-    // locally-generated ticket id (mirrors the API contract in the handoff).
-    window.setTimeout(() => {
-      const ticketId = 4000 + Math.floor(Math.random() * 5000);
-      set({ submitting: false, ticketId, step: 3 });
-    }, 800);
+    set({ submitting: true, submitError: null });
+    try {
+      const res = await submitReport(buildPayload());
+      set({ submitting: false, ticketId: res.reference, step: 3 });
+    } catch {
+      set({ submitting: false, submitError: t.submitFailed });
+    }
   };
 
   // Stepper cell state helper.
@@ -639,6 +692,10 @@ const ReportIssueModal = ({ isOpen, onClose, clinicName, current = {} }) => {
               )}
             </div>
 
+            {s.submitError && (
+              <div className="ri-submit-error" role="alert">{s.submitError}</div>
+            )}
+
             {/* ----------------------------- Footer ----------------------------- */}
             <div className="ri-foot">
               <button
@@ -808,6 +865,11 @@ const ReportIssueModal = ({ isOpen, onClose, clinicName, current = {} }) => {
         .ri-anon-ic { color: var(--mb-primary); flex-shrink: 0; margin-top: 1px; }
         .ri-anon-t { font-size: 12.5px; line-height: 1.5; color: #3B4642; }
 
+        .ri-submit-error {
+          padding: 11px 26px; background: #F7E9E7; color: #B04A3A;
+          font-size: 12.5px; font-weight: 600; line-height: 1.4;
+          border-top: 1px solid #F0D8D3; flex-shrink: 0;
+        }
         .ri-foot {
           border-top: 1px solid var(--mb-border-soft); padding: 16px 26px;
           display: flex; align-items: center; justify-content: space-between;

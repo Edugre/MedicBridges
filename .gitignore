@@ -45,3 +45,6 @@ logs/
 /data/**/*.csv
 /logs/
 >>>>>>> 787b2bd69fbe0a8f6c2a7442386248df11870f4a
+
+# Supabase CLI local state
+supabase/.temp/

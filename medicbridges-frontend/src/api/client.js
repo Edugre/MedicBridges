@@ -93,3 +93,56 @@ export async function apiGet(path, { params, headers, signal } = {}) {
 
   return body;
 }
+
+/**
+ * Low-level JSON POST helper. Mirrors `apiGet`'s error contract.
+ *
+ * @param {string} path  API path beginning with `/`.
+ * @param {object} [opts]
+ * @param {object} [opts.body]     Serialized to JSON as the request body.
+ * @param {object} [opts.headers]
+ * @param {AbortSignal} [opts.signal]
+ */
+export async function apiPost(path, { body, headers, signal } = {}) {
+  const url = `${BASE_URL}${path}`;
+
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    throw new ApiError('Network error — could not reach the server.', {
+      status: 0,
+      code: 'network_error',
+    });
+  }
+
+  let parsed = null;
+  const text = await resp.text();
+  if (text) {
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = text;
+    }
+  }
+
+  if (!resp.ok) {
+    const code = (parsed && parsed.error) || 'http_error';
+    const message =
+      (parsed && (parsed.message || parsed.detail)) ||
+      `Request failed with status ${resp.status}`;
+    throw new ApiError(message, { status: resp.status, code, body: parsed });
+  }
+
+  return parsed;
+}
