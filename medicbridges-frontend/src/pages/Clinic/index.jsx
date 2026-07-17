@@ -7,6 +7,7 @@ import {
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
 import LocationMap from '../../components/LocationMap';
+import ReportIssueModal from '../../components/ReportIssueModal';
 import { useLang } from '../../context/LangContext';
 
 const CONTENT = {
@@ -93,6 +94,7 @@ const Clinic = () => {
   const [notFound, setNotFound] = useState(false);
   const [saved, setSaved] = useState(false);
   const [locationsOpen, setLocationsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -329,17 +331,28 @@ const Clinic = () => {
                 </div>
               )}
 
-              {/* Not wired up yet — disabled until reporting is implemented. */}
               <button
                 type="button"
                 className="report-problem"
-                disabled
-                title="Coming soon"
+                onClick={() => setReportOpen(true)}
               >
                 <Flag size={16} /> {t.reportProblem}
               </button>
             </div>
           </div>
+
+          <ReportIssueModal
+            isOpen={reportOpen}
+            onClose={() => setReportOpen(false)}
+            clinicName={primary?.name || org.name}
+            subjectType="site"
+            subjectKey={primary?.site_id}
+            current={{
+              phone: primary?.phone,
+              address,
+              website,
+            }}
+          />
         </>
       )}
 

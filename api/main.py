@@ -6,6 +6,7 @@ Run locally:  uvicorn api.main:app --reload
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,7 +14,7 @@ from fastapi.responses import JSONResponse
 from api import __version__
 from api.config import get_settings
 from api.errors import APIError, InvalidCoordinatesError
-from api.routers import admin, medications, resources
+from api.routers import admin, medications, reports, resources
 from api.schemas.common import HealthResponse
 
 app = FastAPI(
@@ -50,9 +51,12 @@ async def handle_validation_error(_: Request, exc: RequestValidationError) -> JS
     if {"lat", "lon"} & fields:
         body = InvalidCoordinatesError("lat and lon must be valid numbers").to_body()
         return JSONResponse(status_code=422, content=body)
+    # jsonable_encoder strips non-serializable bits (e.g. the ValueError object
+    # Pydantic tucks into `ctx` when a model/field validator raises) so the
+    # response never fails to render.
     return JSONResponse(
         status_code=422,
-        content={"error": "invalid_request", "detail": errors},
+        content={"error": "invalid_request", "detail": jsonable_encoder(errors)},
     )
 
 
@@ -67,4 +71,5 @@ def health() -> HealthResponse:
 app.include_router(resources.router)
 app.include_router(resources.catalog_router)
 app.include_router(medications.router)
+app.include_router(reports.router)
 app.include_router(admin.router)

@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # --- Admin ---
     admin_api_key: str = Field(default="", alias="ADMIN_API_KEY")
 
+    # --- Cloudflare Turnstile (captcha on the public report endpoint) ---
+    # When empty, captcha verification is skipped (local dev). Set in any
+    # environment where the report endpoint is publicly reachable.
+    turnstile_secret_key: str = Field(default="", alias="TURNSTILE_SECRET_KEY")
+
     # --- Medication source ('cache' = Postgres-backed typeahead) ---
     med_data_source: str = Field(default="cache", alias="MED_DATA_SOURCE")
 
