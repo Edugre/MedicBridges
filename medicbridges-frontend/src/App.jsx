@@ -19,6 +19,7 @@ import './styles/medicbridges-components.css';
 import Navbar from './layout/Navbar';
 import Footer from './layout/Footer';
 import SearchOptionsModal from './components/SearchOptionsModal';
+import LocationPromptModal from './components/LocationPromptModal';
 import { SearchModalProvider } from './context/SearchModalContext';
 import { LangProvider } from './context/LangContext';
 import ScrollToTop from './components/ScrollToTop';
@@ -51,6 +52,7 @@ function App() {
             <Footer />
           </div>
           <SearchOptionsModal />
+          <LocationPromptModal />
           <Analytics />
         </SearchModalProvider>
       </LangProvider>

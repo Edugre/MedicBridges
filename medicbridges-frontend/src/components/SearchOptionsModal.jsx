@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Lock, Search, User, X } from 'lucide-react';
 import { useSearchModal } from '../context/SearchModalContext';
 import { useLang } from '../context/LangContext';
@@ -108,8 +107,7 @@ function IconBox({ children }) {
 }
 
 const SearchOptionsModal = () => {
-  const { isOpen, closeModal } = useSearchModal();
-  const navigate = useNavigate();
+  const { isOpen, closeModal, openLocationPrompt } = useSearchModal();
   const modalRef = useRef(null);
   const { lang } = useLang();
   const t = CONTENT[lang];
@@ -132,9 +130,9 @@ const SearchOptionsModal = () => {
 
   if (!isOpen) return null;
 
+  // Next step: ask where to search (LocationPromptModal).
   function handleAnonymousClick() {
-    closeModal();
-    navigate('/search');
+    openLocationPrompt();
   }
 
   return (

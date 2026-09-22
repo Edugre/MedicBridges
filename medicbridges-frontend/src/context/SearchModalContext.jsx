@@ -2,15 +2,26 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 
 const SearchModalContext = createContext(null);
 
+// The search entry flow is a short sequence of modals:
+//   'options'  -> SearchOptionsModal (anonymous vs. account)
+//   'location' -> LocationPromptModal (device location or ZIP)
+// after which the Search page runs the query behind SearchLoadingModal.
 export function SearchModalProvider({ children }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState(null);
 
-  const openModal = useCallback(() => setIsOpen(true), []);
-  const closeModal = useCallback(() => setIsOpen(false), []);
+  const openModal = useCallback(() => setStep('options'), []);
+  const openLocationPrompt = useCallback(() => setStep('location'), []);
+  const closeModal = useCallback(() => setStep(null), []);
 
   const value = useMemo(
-    () => ({ isOpen, openModal, closeModal }),
-    [isOpen, openModal, closeModal],
+    () => ({
+      isOpen: step === 'options',
+      isLocationOpen: step === 'location',
+      openModal,
+      openLocationPrompt,
+      closeModal,
+    }),
+    [step, openModal, openLocationPrompt, closeModal],
   );
 
   return (
