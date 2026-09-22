@@ -20,7 +20,7 @@ export function useGeolocation(initial = MIAMI_CENTER) {
   const [coords, setCoords] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [usingFallback, setUsingFallback] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(initial === MIAMI_CENTER);
 
   const requestLocation = useCallback(() => {
     return new Promise((resolve) => {

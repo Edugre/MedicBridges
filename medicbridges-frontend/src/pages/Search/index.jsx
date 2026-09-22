@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Search as SearchIcon,
   MapPin,
@@ -10,7 +11,8 @@ import {
   X,
 } from 'lucide-react';
 import { searchNearby, listServices } from '../../api';
-import { useGeolocation } from '../../hooks/useGeolocation';
+import { MIAMI_CENTER, useGeolocation } from '../../hooks/useGeolocation';
+import { loadSearchLocation } from '../../lib/searchLocation';
 import { humanizeCategory, formatAddress, formatDistance, directionsUrl } from '../../lib/format';
 import ClinicCard from '../../components/ClinicCard';
 import SearchMap from '../../components/SearchMap';
@@ -113,8 +115,21 @@ function firstSiteKey(result) {
   return null;
 }
 
+// Search center from the location prompt ({lat, lon, label}), or null.
+function toCenter(loc) {
+  if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lon)) return null;
+  return { lat: loc.lat, lon: loc.lon, label: loc.label || undefined };
+}
+
 const Search = () => {
-  const { coords, error: geoError, usingFallback, requestLocation } = useGeolocation();
+  // The location prompt navigates here with `state.center`; a direct visit
+  // reuses this session's last pick, else falls back to Miami.
+  const routerLocation = useLocation();
+  const [initialCenter] = useState(
+    () => toCenter(routerLocation.state?.center) || toCenter(loadSearchLocation()) || MIAMI_CENTER,
+  );
+  const lastRouteKey = useRef(routerLocation.key);
+  const { coords, error: geoError, usingFallback, requestLocation, setManualCoords } = useGeolocation(initialCenter);
   const { lang } = useLang();
   const t = CONTENT[lang];
 
@@ -268,6 +283,18 @@ const Search = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Picking a new location from the prompt while already on /search.
+  useEffect(() => {
+    if (routerLocation.key === lastRouteKey.current) return;
+    lastRouteKey.current = routerLocation.key;
+    const center = toCenter(routerLocation.state?.center);
+    if (!center) return;
+    setManualCoords(center);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    runSearch(center);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routerLocation.key]);
 
   async function handleUseLocation() {
     const center = await requestLocation();
