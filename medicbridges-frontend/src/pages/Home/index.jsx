@@ -27,7 +27,7 @@ const CONTENT = {
       { n: '03', color: 'var(--mb-honey)', title: 'Get care for less', body: "Call, get directions, and ask for the sliding-scale program at check-in. We'll show you exactly what to say." },
     ],
     costLabel: 'Cost & eligibility',
-    costTitle: "You probably qualify — and you won't pay full price.",
+    costTitle: "You don't have to pay full price.",
     costSub: "Sliding-scale clinics set your fee based on what you earn and how many people you support. Many visits cost very little, and some are free.",
     eligibility: [
       { title: 'No proof of income needed to start', body: 'Begin care first; most clinics sort out paperwork later.' },
@@ -72,7 +72,7 @@ const CONTENT = {
       { n: '03', color: 'var(--mb-honey)', title: 'Recibe atención por menos', body: "Llama, obtén indicaciones y pide el programa de escala móvil al registrarte. Te mostraremos exactamente qué decir." },
     ],
     costLabel: 'Costo y elegibilidad',
-    costTitle: 'Probablemente calificas — y no pagarás el precio completo.',
+    costTitle: 'Probablemente calificas, y no pagarás el precio completo. Hablando sobre hospitales y medicamentos',
     costSub: 'Las clínicas con escala móvil fijan tu tarifa según lo que ganas y cuántas personas dependes de ti. Muchas visitas cuestan muy poco, y algunas son gratuitas.',
     eligibility: [
       { title: 'No necesitas comprobante de ingresos para empezar', body: 'Comienza la atención primero; la mayoría de las clínicas resuelve el papeleo después.' },
