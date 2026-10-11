@@ -16,7 +16,7 @@ const CONTENT = {
   en: {
     eyebrow: "Care that's within reach",
     heroTitle: 'Find low-cost care and affordable medicine, close to home.',
-    heroSub: "Find the clinics, pharmacies, and savings options that make healthcare more affordable.",
+    heroSub: "Get the information you need to find affordable clinics, discounted prescriptions, and assistance programs near you.",
     heroCta: 'Find care near me',
     heroBadge: 'Free · Confidential · No login required',
     howLabel: 'How it works',
