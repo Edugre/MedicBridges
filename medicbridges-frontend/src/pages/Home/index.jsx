@@ -19,7 +19,7 @@ const CONTENT = {
     heroSub: "Get the information you need to find affordable clinics, discounted prescriptions, and assistance programs near you.",
     heroCta: 'Find care near me',
     heroBadge: 'Free · Confidential · No login required',
-    howLabel: 'How it works',
+    howLabel: 'How to use this tool',
     howTitle: 'Three simple steps to care you can afford.',
     steps: [
       { n: '01', color: 'var(--mb-primary)', title: 'Tell us a little about you', body: "Your ZIP, household size, and the care you need. An estimate of your income is all it takes — no proof required." },
