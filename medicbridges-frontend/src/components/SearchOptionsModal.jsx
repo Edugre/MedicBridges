@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { ArrowRight, Check, Lock, Search, User, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Check, ChevronDown, Lock, Search, User, X } from 'lucide-react';
 import { useSearchModal } from '../context/SearchModalContext';
 import { useLang } from '../context/LangContext';
 
@@ -31,6 +31,8 @@ const CONTENT = {
     saveClinics: 'Save clinics & get cost estimates',
     accountsSoon: 'Accounts coming soon',
     trustLine: 'Free · Confidential · No login required',
+    seeDetails: 'See details',
+    hideDetails: 'Hide details',
   },
   es: {
     title: '¿Cómo te gustaría buscar?',
@@ -59,6 +61,8 @@ const CONTENT = {
     saveClinics: 'Guarda clínicas y obtén estimados',
     accountsSoon: 'Cuentas próximamente',
     trustLine: 'Gratis · Confidencial · Sin registro',
+    seeDetails: 'Ver detalles',
+    hideDetails: 'Ocultar detalles',
   },
 };
 
@@ -106,11 +110,47 @@ function IconBox({ children }) {
   );
 }
 
+function DetailsToggle({ open, onToggle, controls, showLabel, hideLabel, marginBottom = '24px' }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={controls}
+      className="search-modal-toggle"
+      style={{
+        alignSelf: 'flex-start',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        background: 'none',
+        border: 'none',
+        padding: '4px 0',
+        marginBottom,
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 600,
+        color: 'var(--mb-primary)',
+      }}
+    >
+      {open ? hideLabel : showLabel}
+      <ChevronDown
+        size={16}
+        style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}
+      />
+    </button>
+  );
+}
+
 const SearchOptionsModal = () => {
   const { isOpen, closeModal, openLocationPrompt } = useSearchModal();
   const modalRef = useRef(null);
   const { lang } = useLang();
   const t = CONTENT[lang];
+
+  const [anonOpen, setAnonOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -127,6 +167,15 @@ const SearchOptionsModal = () => {
       document.body.style.overflow = '';
     };
   }, [isOpen, closeModal]);
+
+  // Start collapsed every time the modal opens.
+  useEffect(() => {
+    if (isOpen) {
+      setAnonOpen(false);
+      setAccountOpen(false);
+      setMobileOpen(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -167,7 +216,9 @@ const SearchOptionsModal = () => {
           boxShadow: '0 20px 60px rgba(15,110,86,0.15)',
           maxWidth: '920px',
           width: '100%',
-          overflow: 'hidden',
+          maxHeight: 'calc(100vh - 64px)',
+          overflowX: 'hidden',
+          overflowY: 'auto',
         }}
       >
         {/* Header */}
@@ -214,7 +265,7 @@ const SearchOptionsModal = () => {
         </div>
 
         {/* Two-column content */}
-        <div className="search-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '480px' }}>
+        <div className="search-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
           {/* Anonymous */}
           <div
             style={{
@@ -233,31 +284,44 @@ const SearchOptionsModal = () => {
               </h3>
             </div>
 
-            <p style={{ fontSize: '15.5px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: '0 0 26px' }}>
+            <p style={{ fontSize: '15.5px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: '0 0 18px' }}>
               {t.anonDesc}
             </p>
 
-            <FeatureList
-              label={t.whatYoullSee}
-              items={t.anonFeatures}
+            <DetailsToggle
+              open={anonOpen}
+              onToggle={() => setAnonOpen((v) => !v)}
+              controls="anon-details"
+              showLabel={t.seeDetails}
+              hideLabel={t.hideDetails}
+              marginBottom={anonOpen ? '20px' : '24px'}
             />
 
-            <div
-              style={{
-                background: 'var(--mb-bg-primary)',
-                border: '1px solid var(--mb-border)',
-                borderRadius: '13px',
-                padding: '14px 16px',
-                marginBottom: '32px',
-              }}
-            >
-              <div style={{ fontSize: '12px', color: 'var(--mb-text-muted)', marginBottom: '6px', fontWeight: 600 }}>
-                {t.limitedTo}
+            {anonOpen && (
+              <div id="anon-details" className="search-modal-details">
+                <FeatureList
+                  label={t.whatYoullSee}
+                  items={t.anonFeatures}
+                />
+
+                <div
+                  style={{
+                    background: 'var(--mb-bg-primary)',
+                    border: '1px solid var(--mb-border)',
+                    borderRadius: '13px',
+                    padding: '14px 16px',
+                    marginBottom: '32px',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', color: 'var(--mb-text-muted)', marginBottom: '6px', fontWeight: 600 }}>
+                    {t.limitedTo}
+                  </div>
+                  <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--mb-text-secondary)' }}>
+                    {t.limitedDesc}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--mb-text-secondary)' }}>
-                {t.limitedDesc}
-              </div>
-            </div>
+            )}
 
             <button
               type="button"
@@ -302,42 +366,55 @@ const SearchOptionsModal = () => {
               </h3>
             </div>
 
-            <p style={{ fontSize: '15.5px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: '0 0 26px' }}>
+            <p style={{ fontSize: '15.5px', lineHeight: 1.62, color: 'var(--mb-text-secondary)', margin: '0 0 18px' }}>
               {t.accountDesc}
             </p>
 
-            <FeatureList
-              label={t.accountBenefitsLabel}
-              items={t.accountFeatures}
+            <DetailsToggle
+              open={accountOpen}
+              onToggle={() => setAccountOpen((v) => !v)}
+              controls="account-details"
+              showLabel={t.seeDetails}
+              hideLabel={t.hideDetails}
+              marginBottom={accountOpen ? '20px' : '24px'}
             />
 
-            <div
-              style={{
-                background: '#fff',
-                border: '1.5px solid var(--mb-primary)',
-                borderRadius: '13px',
-                padding: '14px 16px',
-                marginBottom: '32px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  color: 'var(--mb-primary)',
-                  marginBottom: '6px',
-                  fontWeight: 600,
-                }}
-              >
-                <Lock size={14} strokeWidth={2.5} />
-                {t.secureTitle}
+            {accountOpen && (
+              <div id="account-details" className="search-modal-details">
+                <FeatureList
+                  label={t.accountBenefitsLabel}
+                  items={t.accountFeatures}
+                />
+
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1.5px solid var(--mb-primary)',
+                    borderRadius: '13px',
+                    padding: '14px 16px',
+                    marginBottom: '32px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      color: 'var(--mb-primary)',
+                      marginBottom: '6px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Lock size={14} strokeWidth={2.5} />
+                    {t.secureTitle}
+                  </div>
+                  <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--mb-primary)' }}>
+                    {t.secureDesc}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--mb-primary)' }}>
-                {t.secureDesc}
-              </div>
-            </div>
+            )}
 
             <button
               type="button"
@@ -409,13 +486,28 @@ const SearchOptionsModal = () => {
               <div style={{ fontSize: '13px', color: 'var(--mb-text-secondary)', marginTop: '2px' }}>{t.zipOnly}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '16px' }}>
-            {t.chips.map((chip) => (
-              <span key={chip} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: 'var(--mb-primary)', background: 'var(--mb-bg-sage)', padding: '5px 10px', borderRadius: '999px' }}>
-                <Check size={12} strokeWidth={3} /> {chip}
-              </span>
-            ))}
+
+          <div style={{ display: 'flex' }}>
+            <DetailsToggle
+              open={mobileOpen}
+              onToggle={() => setMobileOpen((v) => !v)}
+              controls="mobile-details"
+              showLabel={t.seeDetails}
+              hideLabel={t.hideDetails}
+              marginBottom="12px"
+            />
           </div>
+
+          {mobileOpen && (
+            <div id="mobile-details" className="search-modal-details" style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '16px' }}>
+              {t.chips.map((chip) => (
+                <span key={chip} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: 'var(--mb-primary)', background: 'var(--mb-bg-sage)', padding: '5px 10px', borderRadius: '999px' }}>
+                  <Check size={12} strokeWidth={3} /> {chip}
+                </span>
+              ))}
+            </div>
+          )}
+
           <button
             type="button"
             onClick={handleAnonymousClick}
@@ -463,6 +555,8 @@ const SearchOptionsModal = () => {
         }
         .search-sheet-cta:hover { background: var(--mb-primary-hover); }
         .search-sheet-close:hover { color: var(--mb-primary); }
+        .search-modal-toggle:hover { text-decoration: underline; }
+        .search-modal-details { animation: details-in 0.18s ease-out; }
 
         /* Bottom sheet is mobile-only */
         .search-modal-sheet { display: none; }
@@ -477,6 +571,8 @@ const SearchOptionsModal = () => {
           .search-modal-sheet {
             display: block;
             width: 100%;
+            max-height: 92vh;
+            overflow-y: auto;
             background: #fff;
             border-radius: 26px 26px 0 0;
             box-shadow: 0 -12px 40px rgba(0,0,0,.2);
@@ -492,6 +588,15 @@ const SearchOptionsModal = () => {
         @keyframes sheet-up {
           from { transform: translateY(100%); }
           to { transform: translateY(0); }
+        }
+
+        @keyframes details-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .search-modal-details, .search-modal-sheet { animation: none; }
         }
       `}</style>
     </div>
