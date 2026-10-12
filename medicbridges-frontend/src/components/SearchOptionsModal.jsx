@@ -9,7 +9,7 @@ const CONTENT = {
     subtitle: 'You can start right away with or without an account. Choose what works best for you.',
     closeModal: 'Close modal',
     searchAnon: 'Search Anonymously',
-    anonDesc: 'Find clinics and pharmacies instantly with just your ZIP code. No account, no login, no information stored.',
+    anonDesc: 'Find clinics and pharmacies instantly with just your ZIP code.',
     whatYoullSee: "What you'll see:",
     anonFeatures: ['Nearby clinics and pharmacies', 'Hours, location, and phone', 'General sliding-scale info'],
     limitedTo: 'Limited to:',
