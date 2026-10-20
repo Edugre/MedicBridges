@@ -61,7 +61,7 @@ const CONTENT = {
   es: {
     eyebrow: 'Atención médica a tu alcance',
     heroTitle: 'Encuentra atención médica de bajo costo y medicamentos accesibles, cerca de ti.',
-    heroSub: 'Responde unas preguntas sencillas y te conectaremos con clínicas y farmacias para las que puedes calificar. La mayoría termina en unos dos minutos.',
+    heroSub: 'Obtén la información que necesitas para encontrar clínicas accesibles, medicamentos con descuento y programas de asistencia cerca de ti.',
     heroCta: 'Encuentra atención cerca de mí',
     heroBadge: 'Gratis · Confidencial · Sin registro requerido',
     howLabel: 'Cómo funciona',
