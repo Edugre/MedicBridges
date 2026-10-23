@@ -10,11 +10,12 @@ import {
   AlertCircle,
   X,
 } from 'lucide-react';
-import { searchNearby, listServices } from '../../api';
+import { searchNearby, listServices, listAssistanceFacilities } from '../../api';
 import { MIAMI_CENTER, useGeolocation } from '../../hooks/useGeolocation';
 import { loadSearchLocation } from '../../lib/searchLocation';
-import { humanizeCategory, formatAddress, formatDistance, directionsUrl } from '../../lib/format';
+import { humanizeCategory, formatAddress, formatDistance, directionsUrl, placeFromLabel } from '../../lib/format';
 import ClinicCard from '../../components/ClinicCard';
+import AssistanceCard from '../../components/AssistanceCard';
 import SearchMap from '../../components/SearchMap';
 import SearchLoadingModal from '../../components/SearchLoadingModal';
 import { useLang } from '../../context/LangContext';
@@ -55,6 +56,7 @@ const CONTENT = {
     resetAll: 'Reset all',
     applyFilters: 'Apply filters',
     fallbackArea: 'your area',
+    moreOptions: 'More options (distance not available)',
   },
   es: {
     genericError: 'Algo salió mal. Inténtalo de nuevo.',
@@ -91,6 +93,7 @@ const CONTENT = {
     resetAll: 'Restablecer todo',
     applyFilters: 'Aplicar filtros',
     fallbackArea: 'tu área',
+    moreOptions: 'Más opciones (distancia no disponible)',
   },
 };
 
@@ -157,6 +160,8 @@ const Search = () => {
   const [page, setPage] = useState(0);
   const [autoExpanded, setAutoExpanded] = useState(null); // { from, to } when radius was widened automatically
   const [data, setData] = useState(null);
+  /** @type {[import('../../api/resources').AssistanceFacility[], Function]} */
+  const [assistance, setAssistance] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
@@ -189,6 +194,17 @@ const Search = () => {
       return hay.includes(q);
     });
   }, [data, textQuery]);
+
+  // Assistance-program facilities have no coordinates, so they never get a
+  // distance or a map pin; they follow the distance-ranked clinics as their
+  // own group.
+  const assistanceItems = useMemo(() => {
+    const q = textQuery.trim().toLowerCase();
+    if (!q) return assistance;
+    return assistance.filter((f) => (
+      `${f.name} ${f.program_name} ${f.category || ''}`.toLowerCase().includes(q)
+    ));
+  }, [assistance, textQuery]);
 
   const totalPages = Math.max(1, Math.ceil(clinics.length / PAGE_SIZE));
   // Clamp in case the result set shrank (e.g. text filter) without a reset.
@@ -235,6 +251,12 @@ const Search = () => {
     setLoading(true);
     setError(null);
     setAutoExpanded(null);
+    // Matched by ZIP / city from the search label, never geocoded. A failure
+    // here only hides the extra group; it never blocks the clinic results.
+    const { zip, city } = placeFromLabel(center.label);
+    const assistancePromise = listAssistanceFacilities({ zip, city, signal: controller.signal })
+      .then((rows) => (Array.isArray(rows) ? rows : []))
+      .catch(() => []);
     try {
       // Progressively widen the radius until we find clinics (or hit the max),
       // so a sparse area doesn't dead-end at an empty 5 km search.
@@ -255,7 +277,10 @@ const Search = () => {
         if (!wider) break;
         radiusKm = wider;
       }
+      const assistanceRows = await assistancePromise;
+      if (controller.signal.aborted) return;
       setData(result);
+      setAssistance(assistanceRows);
       setPage(0);
       setSelectedSiteId(firstSiteKey(result)); // highlight the first (nearest) clinic
       if (radiusKm !== f.radiusKm && countSites(result) > 0) {
@@ -266,6 +291,7 @@ const Search = () => {
       if (err.name === 'AbortError') return;
       setError(err.message || t.genericError);
       setData(null);
+      setAssistance([]);
     } finally {
       setLoading(false);
     }
@@ -355,20 +381,47 @@ const Search = () => {
         </div>
       );
     }
+    // Only after the last page of distance-ranked clinics.
+    const assistanceGroup = !loading && assistanceItems.length > 0 && safePage === totalPages - 1 && (
+      <>
+        <div
+          style={{
+            fontSize: '12.5px',
+            fontWeight: 600,
+            color: 'var(--mb-text-secondary)',
+            ...(carousel
+              ? { flexShrink: 0, width: '120px', alignSelf: 'center', lineHeight: 1.35 }
+              : { marginTop: clinics.length ? '6px' : 0 }),
+          }}
+        >
+          {t.moreOptions}
+        </div>
+        {assistanceItems.map((f) => (
+          <AssistanceCard
+            key={`assist:${f.facility_id}:${f.program_id}`}
+            facility={f}
+            width={carousel ? '270px' : undefined}
+          />
+        ))}
+      </>
+    );
     if (!loading && clinics.length === 0) {
       return (
-        <div style={{ background: '#fff', border: '1px dashed var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
-          <MapPin size={36} color="var(--mb-border)" style={{ marginBottom: '0.75rem' }} />
-          <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem', color: 'var(--mb-text-muted)' }}>
-            {desert ? t.noneNearby : t.noneMatch}
-          </h3>
-          <p style={{ color: 'var(--mb-text-muted)', fontSize: '0.92rem' }}>
-            {t.widenHint}
-          </p>
-        </div>
+        <>
+          <div style={{ background: '#fff', border: '1px dashed var(--mb-border)', borderRadius: '16px', textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+            <MapPin size={36} color="var(--mb-border)" style={{ marginBottom: '0.75rem' }} />
+            <h3 style={{ fontSize: '1.05rem', marginBottom: '0.4rem', color: 'var(--mb-text-muted)' }}>
+              {desert ? t.noneNearby : t.noneMatch}
+            </h3>
+            <p style={{ color: 'var(--mb-text-muted)', fontSize: '0.92rem' }}>
+              {t.widenHint}
+            </p>
+          </div>
+          {assistanceGroup}
+        </>
       );
     }
-    return pageClinics.map(({ org, site }) => {
+    const cards = pageClinics.map(({ org, site }) => {
       const siteKey = `${org.org_id}:${site.site_id}`;
       return (
         <ClinicCard
@@ -382,6 +435,7 @@ const Search = () => {
         />
       );
     });
+    return <>{cards}{assistanceGroup}</>;
   }
 
   // Prev / numbered / Next controls. Hidden when everything fits on one page.

@@ -47,6 +47,11 @@ const CONTENT = {
   },
 };
 
+// Only items with real coordinates get a pin, a popup, or a say in the bounds.
+function hasCoords(site) {
+  return Number.isFinite(site?.latitude) && Number.isFinite(site?.longitude);
+}
+
 function createMarkerElement(label, isSelected, t) {
   const el = document.createElement('button');
   el.type = 'button';
@@ -194,9 +199,9 @@ const SearchMap = ({
 
     let markerCount = 0;
     for (const site of sites) {
+      if (!hasCoords(site)) continue;
       const lat = site.latitude;
       const lon = site.longitude;
-      if (lat == null || lon == null) continue;
 
       const siteId = `${site.orgId}:${site.siteId}`;
       const el = createMarkerElement(site.label, siteId === selectedSiteId, t);
@@ -217,7 +222,7 @@ const SearchMap = ({
     // On a fresh result set, zoom in on the selected (nearest) clinic if there
     // is one; otherwise fall back to fitting all pins in view.
     const focus = sites.find(
-      (s) => `${s.orgId}:${s.siteId}` === selectedSiteId && s.latitude != null && s.longitude != null,
+      (s) => `${s.orgId}:${s.siteId}` === selectedSiteId && hasCoords(s),
     );
     if (focus) {
       map.flyTo({ center: [focus.longitude, focus.latitude], zoom: 14, duration: 700, essential: true });
@@ -249,7 +254,7 @@ const SearchMap = ({
     const map = mapRef.current;
     if (!map || !TOKEN || !selectedSiteId) return;
     const site = sites.find((s) => `${s.orgId}:${s.siteId}` === selectedSiteId);
-    if (!site || site.latitude == null || site.longitude == null) return;
+    if (!hasCoords(site)) return;
     map.easeTo({
       center: [site.longitude, site.latitude],
       zoom: Math.max(map.getZoom(), 14),
@@ -273,7 +278,7 @@ const SearchMap = ({
 
     if (!selectedSiteId) return;
     const site = sites.find((s) => `${s.orgId}:${s.siteId}` === selectedSiteId);
-    if (!site || site.latitude == null || site.longitude == null) return;
+    if (!hasCoords(site)) return;
 
     const popup = new mapboxgl.Popup({
       offset: 26,

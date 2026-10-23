@@ -56,3 +56,40 @@ export function splitServicesForSite(org, site) {
   const orgOnly = (org?.services || []).filter((s) => !hereNames.has(s.name));
   return { here, orgOnly };
 }
+
+/** Great-circle distance in meters from {lat, lon} to an item's coordinates, or null. */
+export function distanceMeters(origin, item) {
+  if (!origin || item?.latitude == null || item?.longitude == null) return null;
+  const rad = (d) => (d * Math.PI) / 180;
+  const dLat = rad(item.latitude - origin.lat);
+  const dLon = rad(item.longitude - origin.lon);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(rad(origin.lat)) * Math.cos(rad(item.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
+/** Sort comparator: closest first, unknown distances last. */
+export function byDistance(a, b) {
+  return (a.distance_m ?? Infinity) - (b.distance_m ?? Infinity);
+}
+
+/**
+ * ZIP and city from a search-center label such as "Miami, FL 33130" (the
+ * format geocode.js produces). Either may be null, e.g. for "Your location".
+ */
+export function placeFromLabel(label) {
+  const text = String(label || '');
+  const zip = text.match(/\b(\d{5})\b/)?.[1] || null;
+  const city = text.includes(',') ? text.split(',')[0].trim() || null : null;
+  return { zip, city };
+}
+
+/** "Jan 15, 2026" from an ISO date (YYYY-MM-DD), read as a calendar date. */
+export function formatIsoDate(value, lang = 'en') {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US', {
+    year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
+  });
+}
