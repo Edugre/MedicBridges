@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   MapPin, Phone, Globe, ArrowLeft, Check, ExternalLink, Pill,
-  AlertCircle, Building2, Send, Bookmark, ChevronDown, Flag,
+  AlertCircle, Building2, Send, Bookmark, ChevronDown, Flag, Info,
 } from 'lucide-react';
 import { getOrganization } from '../../api';
 import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
@@ -40,6 +40,10 @@ const CONTENT = {
     phone: 'Phone',
     address: 'Address',
     reportProblem: 'Report a problem',
+    notice340bTitle: '340B Program notice.',
+    notice340bBody:
+      'This clinic or its parent organization appears in the federal 340B program list. Participation does not guarantee a discount or that the clinic will accept you. MedicBridges suggests asking the clinic about discounts or sliding-fee options before your visit. MedicBridges is not responsible for any denial of service. MedicBridges is not affiliated with or endorsed by HRSA or the U.S. government.',
+    notice340bSource: 'Source: HRSA 340B OPAIS',
   },
   es: {
     backToResults: 'Volver a los resultados',
@@ -70,6 +74,10 @@ const CONTENT = {
     phone: 'Teléfono',
     address: 'Dirección',
     reportProblem: 'Reportar un problema',
+    notice340bTitle: 'Aviso sobre el programa 340B.',
+    notice340bBody:
+      'Esta clínica o su organización matriz aparece en la lista federal del programa 340B. Participar no garantiza un descuento ni que la clínica te atienda. MedicBridges te sugiere preguntar a la clínica por descuentos o por tarifas según tu ingreso antes de ir. MedicBridges no se hace responsable si te niegan el servicio. MedicBridges no está afiliada ni respaldada por HRSA ni por el gobierno de EE. UU.',
+    notice340bSource: 'Fuente: HRSA 340B OPAIS',
   },
 };
 
@@ -225,6 +233,24 @@ const Clinic = () => {
               directions={directions}
             />
           </div>
+
+          {/* ---------- 340B notice (shown whenever the organization has 340B) ---------- */}
+          {org.has_340b && (
+            <aside className="notice-340b" role="note" aria-label={t.notice340bTitle}>
+              <Info size={18} className="notice-340b-icon" aria-hidden="true" />
+              <div>
+                <strong>{t.notice340bTitle}</strong> {t.notice340bBody}{' '}
+                <a
+                  href="https://340bopais.hrsa.gov/help/reports/dailyreports.htm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t.notice340bSource}
+                </a>
+                .
+              </div>
+            </aside>
+          )}
 
           {/* ---------- Two-column body ---------- */}
           <div className="clinic-body" style={{ display: 'flex', gap: '22px', alignItems: 'flex-start' }}>
@@ -438,6 +464,14 @@ const Clinic = () => {
           position: relative; background: #E7E2D7; overflow: hidden;
           width: 360px; min-height: 260px; flex-shrink: 0;
         }
+        .notice-340b {
+          display: flex; align-items: flex-start; gap: 12px;
+          margin-bottom: 22px; padding: 14px 18px; border-radius: 14px;
+          background: var(--mb-honey-soft); border: 1px solid #F2E0C2;
+          color: var(--mb-text-primary); font-size: 13.5px; line-height: 1.55;
+        }
+        .notice-340b-icon { color: #B87814; flex-shrink: 0; margin-top: 2px; }
+        .notice-340b a { color: var(--mb-primary); text-decoration: underline; }
         @media (max-width: 768px) {
           .clinic-page { padding: 16px 15px 26px; }
           .clinic-hero { flex-direction: column; }
