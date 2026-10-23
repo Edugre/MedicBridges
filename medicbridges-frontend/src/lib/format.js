@@ -32,3 +32,27 @@ export function humanizeCategory(value) {
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** The URL if it is http(s), else null (never render javascript:/data: links). */
+export function safeHttpUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Services offered at a specific site vs. only somewhere in the organization.
+ * A site's own `services` are site-level evidence; anything else in
+ * `org.services` (including level "site" entries confirmed at *other* sites)
+ * is not confirmed for this site.
+ */
+export function splitServicesForSite(org, site) {
+  const here = site?.services || [];
+  const hereNames = new Set(here.map((s) => s.name));
+  const orgOnly = (org?.services || []).filter((s) => !hereNames.has(s.name));
+  return { here, orgOnly };
+}

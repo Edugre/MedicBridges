@@ -196,9 +196,30 @@ by the rebuild. ETL upserts-and-links locations rather than embedding addresses.
 - `site_service` (**canonical** grain — care is delivered at sites):
   `site_id → site`, `service_id → service`, `data_source`, `source_url`,
   `confidence numeric`, `is_verified boolean`, `extracted_at`, PK `(site_id, service_id)`.
-- `org_service`: becomes a **view** rolling up distinct services across an org's sites
-  (removes a redundant maintained table). *(Decision D3 — UDS derives at org grain, so we
-  may keep it as a table instead; see open questions.)*
+- `org_service` (**table**, since 2026-10-23): org-level evidence that the organization
+  offers a service *somewhere in its network* — not at every site. `org_id`, `service_id`,
+  `data_source` (`website_crawl` | `website_manual`), `source_url`, `confidence 0–1`,
+  `is_verified` (default false), `extracted_at`; PK `(org_id, service_id, data_source)`.
+- `v_org_service_combined`: one row per (org, service, evidence) with `level`:
+  - `site` — evidence about specific sites (`site_ids`): the site's own web page,
+    the FACHC directory, or a row verified at that site.
+  - `org` — everything else: `org_service`, and HRSA UDS Table 5 rows that
+    `transform_uds_services()` copies onto every service-delivery site. All 83,820
+    `site_service` rows were UDS-derived on 2026-10-23, so none are `site` yet.
+- `staging_org_web_finding` (service-role only): crawler review queue. Never exposed.
+
+### 5.8a Names and geography
+
+- `organization.name` = HRSA legal grantee name (55 Florida orgs corrected on
+  2026-10-22; previous site-style names in `organization_name_backup`, service-role only).
+- `organization.display_name` (nullable) = patient-facing brand. Every app-facing
+  name is `coalesce(display_name, name)` (`v_site.org_name`, `v_org_services.org_name`,
+  `v_resource.affiliation`, `search_orgs_nearby.org_name`).
+- `location.county` / `county_fips` from the HRSA sites file; 18 Florida site
+  locations are still null.
+- Data for all of the above: `scripts/sql/20261023_fl_org_data.sql`.
+- **Known gap:** `transform_organizations()` still sets `name`/`website` from HRSA
+  *site* rows, so re-running `etl_fqhc_sites` reverts the name and website fixes.
 
 ### 5.9 Operational tables
 
@@ -209,7 +230,9 @@ by the rebuild. ETL upserts-and-links locations rather than embedding addresses.
 
 - `v_site` — site + organization + location (lat/lon/geom) + aggregated services array.
 - `v_contract_pharmacy` — pharmacy + location + `is_active`.
-- `v_org_services` — org-level service rollup.
+- `v_org_services` — org-level rollup of `site_service` (legacy; the API uses
+  `v_org_service_combined`).
+- `v_org_service_combined` — org + site services with `level` (see 5.8).
 - `v_data_quality_summary` — monitoring counts.
 
 ### 5.11 Indexes & RLS
@@ -218,6 +241,9 @@ by the rebuild. ETL upserts-and-links locations rather than embedding addresses.
   `site_service.service_id`.
 - `public_read` SELECT policy for `anon`/`authenticated` on curated tables + views.
 - `staging` not exposed; `etl_run` and `data_quality_review` restricted to `service_role`.
+- `org_service` and `v_org_service_combined` are world-readable (same `public_read` shape).
+  `organization_name_backup` and `staging_org_web_finding` have RLS with no policy and all
+  anon/authenticated privileges revoked (Supabase's default privileges had granted ALL).
 
 ---
 
@@ -290,10 +316,10 @@ Resolved:
 - **D2 — Deduplicate `location` by `address_key`?** ✅ **Yes** (geocode each unique address
   once).
 - **D4 — Keys.** ✅ **uuid surrogate PKs + natural keys as UNIQUE.**
+- **D3 — `org_service` as a view or a table?** ✅ **Table** for org-level evidence, plus
+  `v_org_service_combined` to read both grains with an explicit `level`.
 
 Still open (can be decided when writing the DDL):
-- **D3 — `org_service` as a view or a table?** View = less to maintain; table = matches the
-  UDS org-grain derivation more directly.
 - **D5 — Contract pharmacy scope.** Confirm v2 imports **only health-center-linked**
   pharmacies (enables the FK) and drops out-of-scope entity types entirely.
 

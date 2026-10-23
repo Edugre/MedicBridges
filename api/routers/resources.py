@@ -38,6 +38,10 @@ def nearby(
     service_categories: Annotated[list[str] | None, Query()] = None,
     accepts_sliding_scale: Annotated[bool | None, Query()] = None,
     has_340b: Annotated[bool | None, Query()] = None,
+    county: Annotated[
+        str | None,
+        Query(description="County name ('Miami-Dade' or 'Miami-Dade County') or 5-digit FIPS"),
+    ] = None,
     include_pharmacies_outside_radius: Annotated[bool, Query()] = True,
     client: Client = Depends(get_anon_client),
     settings: Settings = Depends(get_settings),
@@ -71,6 +75,7 @@ def nearby(
         service_categories=service_categories or None,
         accepts_sliding_scale=accepts_sliding_scale,
         has_340b=has_340b,
+        county=(county or "").strip() or None,
         include_pharmacies="pharmacy" in types,
         include_pharmacies_outside_radius=include_pharmacies_outside_radius,
     )
@@ -79,9 +84,13 @@ def nearby(
 @router.get("/organizations/{org_id}", response_model=OrganizationOut)
 def organization_detail(
     org_id: str,
+    county: Annotated[
+        str | None,
+        Query(description="Only return sites in this county (name or 5-digit FIPS)"),
+    ] = None,
     client: Client = Depends(get_anon_client),
 ) -> OrganizationOut:
-    org = spatial.get_organization(client, org_id)
+    org = spatial.get_organization(client, org_id, county=(county or "").strip() or None)
     if org is None:
         raise NotFoundError("Organization not found", resource="organization")
     return org
@@ -92,27 +101,10 @@ def site_detail(
     site_id: str,
     client: Client = Depends(get_anon_client),
 ) -> SiteOut:
-    row = spatial.get_site(client, site_id)
-    if row is None:
+    site = spatial.get_site(client, site_id)
+    if site is None:
         raise NotFoundError("Site not found", resource="site")
-    return SiteOut(
-        site_id=row["site_id"],
-        name=row.get("name") or "",
-        distance_m=None,
-        within_radius=False,
-        bphc_site_num=row.get("bphc_site_num"),
-        phone=row.get("phone"),
-        website=row.get("website"),
-        address_line_1=row.get("address_line_1"),
-        city=row.get("city"),
-        state=row.get("state"),
-        zip=row.get("zip"),
-        latitude=float(row["latitude"]) if row.get("latitude") is not None else None,
-        longitude=float(row["longitude"]) if row.get("longitude") is not None else None,
-        center_type=row.get("center_type"),
-        accepts_sliding_scale=row.get("accepts_sliding_scale"),
-        service_categories=row.get("service_categories") or [],
-    )
+    return site
 
 
 # Service taxonomy lives under its own top-level path but is part of discovery.
