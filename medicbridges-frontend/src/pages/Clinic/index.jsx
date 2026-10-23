@@ -5,9 +5,11 @@ import {
   AlertCircle, Building2, Send, Bookmark, ChevronDown, Flag, Info,
 } from 'lucide-react';
 import { getOrganization } from '../../api';
-import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../../lib/format';
+import { formatAddress, formatDistance, directionsUrl, splitServicesForSite } from '../../lib/format';
 import LocationMap from '../../components/LocationMap';
 import ReportIssueModal from '../../components/ReportIssueModal';
+import ServiceEvidence from '../../components/ServiceEvidence';
+import { SERVICE_TEXT } from '../../lib/serviceText';
 import { useLang } from '../../context/LangContext';
 
 const CONTENT = {
@@ -27,6 +29,7 @@ const CONTENT = {
     saved: 'Saved',
     saveClinic: 'Save clinic',
     servicesOffered: 'Services offered',
+    atThisLocation: 'At this location',
     aboutOrg: 'About the organization',
     operatedByPre: 'Operated by ',
     operatedByPost: '.',
@@ -61,6 +64,7 @@ const CONTENT = {
     saved: 'Guardada',
     saveClinic: 'Guardar clínica',
     servicesOffered: 'Servicios ofrecidos',
+    atThisLocation: 'En esta ubicación',
     aboutOrg: 'Sobre la organización',
     operatedByPre: 'Operada por ',
     operatedByPost: '.',
@@ -95,7 +99,7 @@ function isNotFound(err) {
 const Clinic = () => {
   const { id } = useParams();
   const { lang } = useLang();
-  const t = CONTENT[lang];
+  const t = { ...CONTENT[lang], ...SERVICE_TEXT[lang] };
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,7 +133,8 @@ const Clinic = () => {
 
   const sites = org?.sites || [];
   const primary = sites[0];
-  const allCategories = [...new Set(sites.flatMap((s) => s.service_categories || []))];
+  // Services confirmed for the primary site vs. offered somewhere in the org.
+  const { here: siteServices, orgOnly: orgServices } = splitServicesForSite(org, primary);
   const slidingScale = sites.some((s) => s.accepts_sliding_scale);
   const website = primary?.website || org?.website;
   const address = primary && formatAddress(primary);
@@ -256,17 +261,41 @@ const Clinic = () => {
           <div className="clinic-body" style={{ display: 'flex', gap: '22px', alignItems: 'flex-start' }}>
             {/* Main column */}
             <div className="clinic-main" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '22px' }}>
-              {allCategories.length > 0 && (
+              {(siteServices.length > 0 || orgServices.length > 0) && (
                 <div className="dcard">
                   <div className="sech">{t.servicesOffered}</div>
-                  <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 28px' }}>
-                    {allCategories.map((service) => (
-                      <div key={service} className="svc">
-                        <span className="tick"><Check size={12} strokeWidth={3} /></span>
-                        {humanizeCategory(service)}
+                  {siteServices.length > 0 && (
+                    <>
+                      <div className="svc-group">{t.atThisLocation}</div>
+                      <div className="services-grid">
+                        {siteServices.map((service) => (
+                          <div key={service.name} className="svc">
+                            <span className="tick"><Check size={12} strokeWidth={3} /></span>
+                            <div>
+                              <div>{service.name}</div>
+                              <ServiceEvidence service={service} />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
+                  {orgServices.length > 0 && (
+                    <>
+                      <div className="svc-group">{t.orgLevel}</div>
+                      <div className="services-grid">
+                        {orgServices.map((service) => (
+                          <div key={service.name} className="svc svc-org">
+                            <span className="tick"><Building2 size={12} /></span>
+                            <div>
+                              <div>{service.name}</div>
+                              <ServiceEvidence service={service} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -426,6 +455,10 @@ const Clinic = () => {
           display: flex; align-items: center; gap: 9px;
           font-size: 14px; color: #3B4642; padding: 9px 0;
         }
+        .services-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 28px; }
+        .services-grid + .svc-group { margin-top: 14px; }
+        .svc-group { font-size: 12.5px; font-weight: 600; color: var(--mb-text-secondary); margin-bottom: 4px; }
+        .svc-org .tick { background: transparent; border: 1px dashed var(--mb-border); color: var(--mb-text-muted); }
         .svc .tick {
           width: 22px; height: 22px; border-radius: 7px;
           background: var(--mb-lime-soft); color: var(--mb-primary);
@@ -479,6 +512,7 @@ const Clinic = () => {
           .clinic-map { order: 1; width: 100% !important; height: 170px; }
           .clinic-body { flex-direction: column; }
           .clinic-rail { width: 100%; }
+          .services-grid { grid-template-columns: 1fr; }
 
           /* Mobile hero actions: Directions + Call side-by-side, Website/Save wrap below */
           .clinic-actions { gap: 9px; }

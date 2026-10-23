@@ -184,7 +184,8 @@ const Search = () => {
     if (!textQuery.trim()) return rows;
     const q = textQuery.trim().toLowerCase();
     return rows.filter(({ org, site }) => {
-      const hay = `${site.name || ''} ${org.name || ''} ${(site.service_categories || []).join(' ')}`.toLowerCase();
+      const services = [...(site.services || []), ...(org.services || [])];
+      const hay = `${site.name || ''} ${org.name || ''} ${services.map((s) => `${s.name} ${s.category}`).join(' ')}`.toLowerCase();
       return hay.includes(q);
     });
   }, [data, textQuery]);

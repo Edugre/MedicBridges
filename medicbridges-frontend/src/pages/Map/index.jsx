@@ -206,6 +206,9 @@ const MapPage = () => {
                   </h3>
                   {distance && <span style={{ fontSize: '0.9rem', color: 'var(--mb-text-heading)', whiteSpace: 'nowrap' }}>{distance}</span>}
                 </div>
+                {kind === 'site' && org.name && item.name && org.name !== item.name && (
+                  <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.85rem', marginTop: '0.2rem' }}>{org.name}</p>
+                )}
                 {address && <p style={{ color: 'var(--mb-text-secondary)', fontSize: '0.9rem', marginTop: '0.4rem' }}>{address}</p>}
                 <span style={{ display: 'inline-block', marginTop: '0.6rem', fontSize: '0.78rem', color: 'var(--mb-text-muted)' }}>
                   {kind === 'pharmacy' ? t.contractPharmacy : t.healthCenter}

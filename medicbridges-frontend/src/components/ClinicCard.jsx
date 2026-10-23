@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Pill, Navigation } from 'lucide-react';
-import { formatAddress, formatDistance, humanizeCategory, directionsUrl } from '../lib/format';
+import { formatAddress, formatDistance, humanizeCategory, directionsUrl, splitServicesForSite } from '../lib/format';
 import { useLang } from '../context/LangContext';
+import { SERVICE_TEXT } from '../lib/serviceText';
 
 const CONTENT = {
   en: { clinic: 'Clinic', meds340b: '340B meds', slidingScale: 'Sliding scale', call: 'Call', directions: 'Directions' },
@@ -40,10 +41,16 @@ const actionBase = {
 const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, width }) => {
   const navigate = useNavigate();
   const { lang } = useLang();
-  const t = CONTENT[lang];
+  const t = { ...CONTENT[lang], ...SERVICE_TEXT[lang] };
   const distance = formatDistance(site.distance_m ?? org.distance_m);
   const address = formatAddress(site);
-  const categories = (site.service_categories || []).slice(0, 4);
+  // Site-confirmed categories first; org-only ones are styled apart and never
+  // presented as available at this location.
+  const { here, orgOnly } = splitServicesForSite(org, site);
+  const siteCategories = [...new Set(here.map((s) => s.category))];
+  const orgCategories = [...new Set(orgOnly.map((s) => s.category))].filter((c) => !siteCategories.includes(c));
+  const categories = siteCategories.slice(0, 4);
+  const orgOnlyCategories = orgCategories.slice(0, Math.max(0, 4 - categories.length));
   const directions = directionsUrl(site);
 
   const openDetail = () => navigate(`/clinic/${encodeURIComponent(org.org_id)}`);
@@ -92,6 +99,11 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
           >
             {site.name || org.name || t.clinic}
           </div>
+          {org.name && site.name && org.name !== site.name && (
+            <div style={{ color: 'var(--mb-text-secondary)', fontSize: '12.5px', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {org.name}
+            </div>
+          )}
           {address && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--mb-text-secondary)', fontSize: '12.5px', marginTop: '3px' }}>
               <MapPin size={13} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{address}</span>
@@ -106,7 +118,7 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
       </div>
 
       {/* Badge row */}
-      {(org.has_340b || site.accepts_sliding_scale || categories.length > 0) && (
+      {(org.has_340b || site.accepts_sliding_scale || categories.length > 0 || orgOnlyCategories.length > 0) && (
         <div style={{ display: 'flex', flexWrap: width ? 'nowrap' : 'wrap', gap: '6px', overflow: width ? 'hidden' : undefined }}>
           {org.has_340b && (
             <span style={{ ...badgeBase, background: 'var(--mb-honey-soft)', color: '#B87814', border: '1px solid #F2E0C2' }}>
@@ -123,6 +135,16 @@ const ClinicCard = ({ org, site, selected = false, onMouseEnter, onMouseLeave, w
               {humanizeCategory(c)}
             </span>
           ))}
+          {orgOnlyCategories.map((c) => (
+            <span key={`org-${c}`} title={t.orgLevel} style={{ ...badgeBase, background: 'transparent', color: 'var(--mb-text-muted)', border: '1px dashed var(--mb-border)' }}>
+              {humanizeCategory(c)}
+            </span>
+          ))}
+        </div>
+      )}
+      {orgOnlyCategories.length > 0 && (
+        <div style={{ fontSize: '11.5px', color: 'var(--mb-text-muted)', lineHeight: 1.35 }}>
+          {t.orgLevel}
         </div>
       )}
 
