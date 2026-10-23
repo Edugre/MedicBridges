@@ -82,3 +82,35 @@ export function getOrganization(orgId, { county, signal } = {}) {
 export function getSite(siteId, { signal } = {}) {
   return apiGet(`/api/v1/resources/sites/${encodeURIComponent(siteId)}`, { signal });
 }
+
+/**
+ * A facility linked to a published financial assistance program (from
+ * `v_facility_assistance_public`). It has no coordinates: never mapped, never
+ * given a distance, and never carries sliding-scale or HRSA fields.
+ *
+ * @typedef {object} AssistanceFacility
+ * @property {'assistance_facility'} result_type
+ * @property {string} facility_id
+ * @property {string} name
+ * @property {string|null} category
+ * @property {string|null} address
+ * @property {string|null} city
+ * @property {string|null} state
+ * @property {string|null} zip
+ * @property {string|null} phone
+ * @property {string} program_id
+ * @property {string} program_name
+ * @property {string|null} public_copy      Shown verbatim.
+ * @property {string|null} application_url
+ * @property {string|null} policy_url
+ * @property {string|null} policy_revised   ISO date (YYYY-MM-DD).
+ * @property {string|null} last_checked     ISO date (YYYY-MM-DD).
+ */
+
+/**
+ * Published assistance-program facilities matching a ZIP or city.
+ * @returns {Promise<AssistanceFacility[]>}
+ */
+export function listAssistanceFacilities({ zip, city, signal } = {}) {
+  return apiGet('/api/v1/resources/assistance', { signal, params: { zip, city } });
+}

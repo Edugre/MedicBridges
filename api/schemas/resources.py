@@ -115,3 +115,29 @@ class ServiceOut(BaseModel):
     code: str | None = None
     category: str
     description: str | None = None
+
+
+class AssistanceFacilityOut(BaseModel):
+    """A facility linked to a published financial assistance program.
+
+    Read from v_facility_assistance_public only. These facilities have no
+    coordinates, so there is deliberately no distance_m/latitude/longitude, and
+    no sliding-scale or HRSA fields.
+    """
+
+    result_type: Literal["assistance_facility"] = "assistance_facility"
+    facility_id: str
+    name: str
+    category: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip: str | None = None
+    phone: str | None = None
+    program_id: str
+    program_name: str
+    public_copy: str | None = None
+    application_url: str | None = None
+    policy_url: str | None = None
+    policy_revised: str | None = None
+    last_checked: str | None = None

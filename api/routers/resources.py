@@ -16,8 +16,14 @@ from api.config import Settings, get_settings
 from api.deps import get_anon_client
 from api.errors import InvalidCoordinatesError, NotFoundError, RadiusExceedsMaxError
 from api.geo import coordinates_valid
-from api.schemas.resources import NearbyResponse, OrganizationOut, ServiceOut, SiteOut
-from api.services import spatial
+from api.schemas.resources import (
+    AssistanceFacilityOut,
+    NearbyResponse,
+    OrganizationOut,
+    ServiceOut,
+    SiteOut,
+)
+from api.services import assistance, spatial
 
 router = APIRouter(prefix="/api/v1/resources", tags=["resources"])
 
@@ -105,6 +111,19 @@ def site_detail(
     if site is None:
         raise NotFoundError("Site not found", resource="site")
     return site
+
+
+@router.get("/assistance", response_model=list[AssistanceFacilityOut])
+def assistance_facilities(
+    zip: Annotated[str | None, Query(description="5-digit ZIP to match")] = None,
+    city: Annotated[str | None, Query(description="City name to match")] = None,
+    client: Client = Depends(get_anon_client),
+) -> list[AssistanceFacilityOut]:
+    """Published assistance-program facilities matching the ZIP or city.
+
+    No coordinates exist for these, so there is no radius or distance.
+    """
+    return assistance.list_assistance_facilities(client, zip_code=zip, city=city)
 
 
 # Service taxonomy lives under its own top-level path but is part of discovery.
