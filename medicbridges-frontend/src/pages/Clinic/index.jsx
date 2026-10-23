@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Link, Navigate, useLocation, useNavigate, useParams, useSearchParams,
+} from 'react-router-dom';
 import {
   MapPin, Phone, Globe, ArrowLeft, Check, ExternalLink, Pill,
-  AlertCircle, Building2, Send, Bookmark, ChevronDown, ChevronRight, Flag, Info,
+  AlertCircle, Building2, Send, Bookmark, ChevronDown, Flag, Info, List,
   BadgeCheck, CircleDashed, Landmark, BookOpen, MessageCircleQuestion, ArrowDownNarrowWide,
   Stethoscope, Smile, Brain, Microscope, Eye, HeartHandshake,
 } from 'lucide-react';
@@ -15,6 +17,8 @@ import { loadSearchLocation } from '../../lib/searchLocation';
 import LocationMap from '../../components/LocationMap';
 import ReportIssueModal from '../../components/ReportIssueModal';
 import ServiceEvidence, { ServiceSourceLink } from '../../components/ServiceEvidence';
+import PlaceRow from './PlaceRow';
+import ListPanel from './ListPanel';
 import {
   SERVICE_TEXT, SERVICE_CATEGORIES, serviceName, serviceHint, isUnverifiedWebsite,
 } from '../../lib/serviceText';
@@ -22,8 +26,8 @@ import { useLang } from '../../context/LangContext';
 
 const OPAIS_URL = 'https://340bopais.hrsa.gov/help/reports/dailyreports.htm';
 const NAVBAR_OFFSET = 74;
-const LOCATIONS_SHOWN = 4;
-const PHARMACIES_SHOWN = 3;
+const CLOSEST_SHOWN = 3;
+const MOBILE_QUERY = '(max-width: 768px)';
 
 const CONTENT = {
   en: {
@@ -71,8 +75,21 @@ const CONTENT = {
     otherLocations: (n) => `Other locations (${n})`,
     closestFirst: 'Closest first',
     confirmedServices: (n) => (n === 1 ? '1 confirmed service' : `${n} confirmed services`),
-    showAll: (n) => `Show all ${n} locations`,
-    showFewer: 'Show fewer',
+    seeAllLocs: (n) => `See all ${n} locations`,
+    inCounties: (n) => `In ${n} counties`,
+    withConfirmed: (n) => `${n} with confirmed services`,
+    pharmPanel: (n) => `Partner pharmacies (${n})`,
+    searchLocs: 'Search by name, city or ZIP',
+    searchPharm: 'Search pharmacies',
+    all: 'All',
+    otherGroup: 'Other',
+    confirmedOnly: 'Only locations with confirmed services',
+    showing: (k, n) => `Showing ${k} of ${n} · closest first`,
+    noMatch: 'No results match your search.',
+    clearFilters: 'Clear filters',
+    close: 'Close',
+    expandAll: 'Expand all',
+    collapseAll: 'Collapse all',
     aboutOrg: 'About the organization',
     operatedBy: 'This location is operated by',
     aboutTail: ', a community health center funded by the federal government (HRSA).',
@@ -132,8 +149,21 @@ const CONTENT = {
     otherLocations: (n) => `Otras ubicaciones (${n})`,
     closestFirst: 'Más cercanas primero',
     confirmedServices: (n) => (n === 1 ? '1 servicio confirmado' : `${n} servicios confirmados`),
-    showAll: (n) => `Ver las ${n} ubicaciones`,
-    showFewer: 'Ver menos',
+    seeAllLocs: (n) => `Ver las ${n} ubicaciones`,
+    inCounties: (n) => `En ${n} condados`,
+    withConfirmed: (n) => `${n} con servicios confirmados`,
+    pharmPanel: (n) => `Farmacias asociadas (${n})`,
+    searchLocs: 'Busca por nombre, ciudad o código postal',
+    searchPharm: 'Buscar farmacias',
+    all: 'Todas',
+    otherGroup: 'Otras',
+    confirmedOnly: 'Solo ubicaciones con servicios confirmados',
+    showing: (k, n) => `Mostrando ${k} de ${n} · más cercanas primero`,
+    noMatch: 'Ningún resultado coincide con tu búsqueda.',
+    clearFilters: 'Borrar filtros',
+    close: 'Cerrar',
+    expandAll: 'Expandir todo',
+    collapseAll: 'Contraer todo',
     aboutOrg: 'Sobre la organización',
     operatedBy: 'Esta ubicación es operada por',
     aboutTail: ', un centro de salud comunitario financiado por el gobierno federal (HRSA).',
@@ -194,67 +224,68 @@ function smoothScrollTo(elementId) {
   });
 }
 
-const ServiceGroups = ({ services, tier, lang, showNotes }) => (
-  groupByCategory(services).map(([category, items]) => {
+/**
+ * One tier's categories as collapsible rows. `isOpen(category)` and
+ * `onToggle(category)` come from the page, which owns the open state.
+ */
+const ServiceGroups = ({ groups, tier, lang, showNotes, isOpen, onToggle }) => (
+  groups.map(([category, items]) => {
     const Icon = CATEGORY_ICONS[category] || Stethoscope;
+    const open = isOpen(category);
+    const panelId = `svc-${tier}-${category.replace(/\W+/g, '-')}`;
     return (
       <div key={category} className="svc-cat">
-        <div className="svc-cat-head">
+        <button
+          type="button"
+          className="svc-cat-toggle"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => onToggle(category)}
+        >
           <span className="svc-cat-chip"><Icon size={15} /></span>
-          {SERVICE_CATEGORIES[category]?.[lang] || humanizeCategory(category)}
-        </div>
-        <div className="services-grid">
-          {items.map((service) => {
-            const hint = serviceHint(service, lang);
-            return (
-              <div key={service.name} className="svc">
-                <span className="tick">
-                  {tier === 'site' ? <Check size={13} strokeWidth={3} /> : <Building2 size={12} />}
-                </span>
-                <div className="svc-text">
-                  <div className="svc-name">{serviceName(service, lang)}</div>
-                  {hint && <div className="svc-hint">{hint}</div>}
-                  {showNotes && <ServiceEvidence service={service} />}
+          <span className="svc-cat-text">
+            <span className="svc-cat-label">
+              {SERVICE_CATEGORIES[category]?.[lang] || humanizeCategory(category)}
+              <span className="svc-cat-count"> · {items.length}</span>
+            </span>
+            {!open && (
+              <span className="svc-cat-preview">{items.map((s) => serviceName(s, lang)).join(', ')}</span>
+            )}
+          </span>
+          <ChevronDown size={16} className="svc-cat-chev" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+        </button>
+        {open && (
+          <div id={panelId} className="services-grid">
+            {items.map((service) => {
+              const hint = serviceHint(service, lang);
+              return (
+                <div key={service.name} className="svc">
+                  <span className="tick">
+                    {tier === 'site' ? <Check size={13} strokeWidth={3} /> : <Building2 size={12} />}
+                  </span>
+                  <div className="svc-text">
+                    <div className="svc-name">{serviceName(service, lang)}</div>
+                    {hint && <div className="svc-hint">{hint}</div>}
+                    {showNotes && <ServiceEvidence service={service} />}
+                  </div>
+                  <ServiceSourceLink service={service} />
                 </div>
-                <ServiceSourceLink service={service} />
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   })
 );
 
-const PlaceRow = ({ place, callLabel, pills, to }) => {
-  const address = formatAddress(place);
-  const distance = formatDistance(place.distance_m);
-  return (
-    <div className={`loc${to ? ' loc-link' : ''}`}>
-      <div className="loc-text">
-        {to ? (
-          <Link to={to} className="loc-name loc-stretch">{place.name}</Link>
-        ) : (
-          <div className="loc-name">{place.name}</div>
-        )}
-        {address && <div className="loc-addr">{address}</div>}
-        {pills}
-      </div>
-      {distance && <div className="loc-dist">{distance}</div>}
-      {place.phone && (
-        <a className="loc-call" href={`tel:${place.phone}`} aria-label={`${callLabel} ${place.phone}`}>
-          <Phone size={16} />
-        </a>
-      )}
-      {to && <ChevronRight size={16} className="loc-chev" aria-hidden="true" />}
-    </div>
-  );
-};
-
 const Clinic = () => {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const siteParam = searchParams.get('site');
+  const listParam = searchParams.get('list');
+  const location = useLocation();
+  const navigate = useNavigate();
   const { lang } = useLang();
   const t = { ...CONTENT[lang], ...SERVICE_TEXT[lang] };
   const [org, setOrg] = useState(null);
@@ -263,8 +294,10 @@ const Clinic = () => {
   const [notFound, setNotFound] = useState(false);
   const [saved, setSaved] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [allLocationsOpen, setAllLocationsOpen] = useState(false);
-  const [allPharmaciesOpen, setAllPharmaciesOpen] = useState(false);
+  // Category open state: per-category overrides, then Expand/Collapse all, then the default.
+  const [openCats, setOpenCats] = useState({});
+  const [allCats, setAllCats] = useState(null);
+  const [isMobile] = useState(() => window.matchMedia?.(MOBILE_QUERY).matches ?? false);
   const [reportOpen, setReportOpen] = useState(false);
   // The org endpoint has no user location, so distances come from the
   // patient's last search center (kept in this tab only), when we have one.
@@ -317,13 +350,59 @@ const Clinic = () => {
   const addressMeta = [primary?.county, distance && t.away(distance)].filter(Boolean).join(' · ');
 
   const others = sites.filter((s) => s.site_id !== primary?.site_id).sort(byDistance);
-  const shownOthers = allLocationsOpen ? others : others.slice(0, LOCATIONS_SHOWN);
+  const counties = [...new Set(others.map((s) => s.county).filter(Boolean))];
+  const confirmedSites = others.filter((s) => s.services?.length > 0).length;
+  const locSummary = [
+    counties.length > 1 && t.inCounties(counties.length),
+    confirmedSites > 0 && t.withConfirmed(confirmedSites),
+  ].filter(Boolean).join(' · ');
   const pharmacies = (org?.contract_pharmacies || [])
     .filter((p) => p.is_currently_contracted !== false)
     .map(withDistance)
     .sort(byDistance);
-  const shownPharmacies = allPharmaciesOpen ? pharmacies : pharmacies.slice(0, PHARMACIES_SHOWN);
   const siteLink = (s) => `/clinic/${encodeURIComponent(id)}?site=${encodeURIComponent(s.site_id)}`;
+
+  const siteGroups = groupByCategory(siteServices);
+  const orgGroups = groupByCategory(orgServices);
+  const catOpen = (tier, category, index) => {
+    const saved = openCats[`${tier}:${category}`];
+    if (saved != null) return saved;
+    if (allCats != null) return allCats;
+    // Site tier open; org tier: first 2 open on desktop, all closed on mobile.
+    return tier === 'site' || (!isMobile && index < 2);
+  };
+  const allCatsOpen = siteGroups.every(([c], i) => catOpen('site', c, i))
+    && orgGroups.every(([c], i) => catOpen('org', c, i));
+  const toggleCat = (tier, groups) => (category) => {
+    const index = groups.findIndex(([c]) => c === category);
+    setOpenCats((prev) => ({ ...prev, [`${tier}:${category}`]: !catOpen(tier, category, index) }));
+  };
+  const setAllCatsOpen = (open) => {
+    setAllCats(open);
+    setOpenCats({});
+  };
+
+  // The list panel lives in the URL (?list=locations) so Back closes it.
+  const panelItems = listParam === 'locations' ? others : listParam === 'pharmacies' ? pharmacies : [];
+  const panelOpen = panelItems.length > 0;
+  const openPanel = (mode) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('list', mode);
+      return next;
+    }, { state: { listPanel: true } });
+  };
+  const closePanel = useCallback(() => {
+    if (location.state?.listPanel) {
+      navigate(-1);
+    } else {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('list');
+        return next;
+      }, { replace: true });
+    }
+  }, [location.state, navigate, setSearchParams]);
 
   if (!loading && notFound) {
     return <Navigate to="/404" replace />;
@@ -444,6 +523,10 @@ const Clinic = () => {
                 <div className="svc-header">
                   <h2 className="sech" style={{ marginBottom: 0 }}>{t.servicesOffered}</h2>
                   {hasServices && (
+                    <div className="svc-header-actions">
+                    <button type="button" className="all-cats" onClick={() => setAllCatsOpen(!allCatsOpen)}>
+                      {allCatsOpen ? t.collapseAll : t.expandAll}
+                    </button>
                     <button
                       type="button"
                       className="how-toggle"
@@ -454,6 +537,7 @@ const Clinic = () => {
                       <Info size={15} /> {t.howWeKnow}
                       <ChevronDown size={14} style={{ transform: sourcesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
                     </button>
+                    </div>
                   )}
                 </div>
 
@@ -483,7 +567,14 @@ const Clinic = () => {
                         <div className="tier-sub">{t.confirmedFor(primary.name)}</div>
                       </div>
                     </div>
-                    <ServiceGroups services={siteServices} tier="site" lang={lang} showNotes />
+                    <ServiceGroups
+                      groups={siteGroups}
+                      tier="site"
+                      lang={lang}
+                      showNotes
+                      isOpen={(c) => catOpen('site', c, siteGroups.findIndex(([g]) => g === c))}
+                      onToggle={toggleCat('site', siteGroups)}
+                    />
                   </div>
                 )}
 
@@ -508,7 +599,14 @@ const Clinic = () => {
                         <CircleDashed size={13} style={{ flexShrink: 0 }} /> {t.allUnverified}
                       </div>
                     )}
-                    <ServiceGroups services={orgServices} tier="org" lang={lang} showNotes={!orgAllUnverifiedWebsite} />
+                    <ServiceGroups
+                      groups={orgGroups}
+                      tier="org"
+                      lang={lang}
+                      showNotes={!orgAllUnverifiedWebsite}
+                      isOpen={(c) => catOpen('org', c, orgGroups.findIndex(([g]) => g === c))}
+                      onToggle={toggleCat('org', orgGroups)}
+                    />
                   </div>
                 )}
 
@@ -546,19 +644,13 @@ const Clinic = () => {
                       <div className="tier-title">{t.pharmTitle}</div>
                       <div className="pharm-hint">{t.pharmHint}</div>
                       <div style={{ marginTop: '6px' }}>
-                        {shownPharmacies.map((p) => (
+                        {pharmacies.slice(0, CLOSEST_SHOWN).map((p) => (
                           <PlaceRow key={p.pharmacy_id} place={p} callLabel={t.call} />
                         ))}
                       </div>
-                      {pharmacies.length > PHARMACIES_SHOWN && (
-                        <button
-                          type="button"
-                          className="text-link"
-                          aria-expanded={allPharmaciesOpen}
-                          onClick={() => setAllPharmaciesOpen((o) => !o)}
-                        >
-                          {allPharmaciesOpen ? t.showFewer : t.pharmMore(pharmacies.length)}
-                          <ChevronRight size={15} style={{ transform: allPharmaciesOpen ? 'rotate(-90deg)' : 'none' }} />
+                      {pharmacies.length > CLOSEST_SHOWN && (
+                        <button type="button" className="see-all" onClick={() => openPanel('pharmacies')}>
+                          <List size={16} /> {t.pharmMore(pharmacies.length)}
                         </button>
                       )}
                     </div>
@@ -568,14 +660,15 @@ const Clinic = () => {
 
               {/* Other locations: closest first, the shown site excluded */}
               {others.length > 0 && (
-                <section className="dcard" style={{ paddingBottom: '10px' }}>
+                <section className="dcard">
                   <div className="loc-header">
                     <h2 className="sech" style={{ marginBottom: 0 }}>
                       <MapPin size={18} color="var(--mb-primary)" /> {t.otherLocations(others.length)}
                     </h2>
                     <span className="loc-sort"><ArrowDownNarrowWide size={13} /> {t.closestFirst}</span>
                   </div>
-                  {shownOthers.map((s) => (
+                  {locSummary && <div className="loc-summary">{locSummary}</div>}
+                  {others.slice(0, CLOSEST_SHOWN).map((s) => (
                     <PlaceRow
                       key={s.site_id}
                       place={s}
@@ -591,15 +684,9 @@ const Clinic = () => {
                       )}
                     />
                   ))}
-                  {others.length > LOCATIONS_SHOWN && (
-                    <button
-                      type="button"
-                      className="text-link"
-                      aria-expanded={allLocationsOpen}
-                      onClick={() => setAllLocationsOpen((o) => !o)}
-                    >
-                      {allLocationsOpen ? t.showFewer : t.showAll(others.length)}
-                      <ChevronDown size={15} style={{ transform: allLocationsOpen ? 'rotate(180deg)' : 'none' }} />
+                  {others.length > CLOSEST_SHOWN && (
+                    <button type="button" className="see-all" onClick={() => openPanel('locations')}>
+                      <List size={16} /> {t.seeAllLocs(others.length)}
                     </button>
                   )}
                 </section>
@@ -683,6 +770,19 @@ const Clinic = () => {
               </button>
             </div>
           </div>
+
+          {panelOpen && (
+            <ListPanel
+              key={listParam}
+              mode={listParam}
+              items={panelItems}
+              title={listParam === 'locations' ? t.otherLocations(others.length) : t.pharmPanel(pharmacies.length)}
+              subtitle={org.name}
+              t={t}
+              onClose={closePanel}
+              siteLink={siteLink}
+            />
+          )}
 
           {/* Mobile-only sticky actions */}
           {(directions || phone) && (
@@ -811,18 +911,26 @@ const Clinic = () => {
         .how-item { display: flex; gap: 10px; align-items: flex-start; }
         .how-title { font-size: 13.5px; font-weight: 600; line-height: 1.4; }
         .how-body { font-size: 13px; color: var(--mb-text-secondary); line-height: 1.45; text-wrap: pretty; }
-        .tier { border-radius: 14px; padding: 16px 18px 8px; }
+        .svc-header-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .all-cats {
+          display: inline-flex; align-items: center; min-height: 36px; padding: 0 10px;
+          border: none; background: none; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+          color: var(--mb-primary); text-decoration: underline; text-decoration-color: #CFC8B8; text-underline-offset: 3px;
+        }
+        .all-cats:hover { color: var(--mb-primary-hover); }
+        .tier { border-radius: 14px; padding: 16px 18px 4px; }
         .tier-site { background: #F4FBF8; border: 1px solid #CDEDE1; margin-bottom: 14px; }
         .tier-site:last-child { margin-bottom: 0; }
         .tier-org { background: var(--mb-bg-primary); border: 1px dashed #D6CEBD; }
         .tier-head { display: flex; align-items: flex-start; gap: 10px; }
+        .tier > .tier-head { margin-bottom: 12px; }
         .tier-head-org { justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
         .tier-head-org > .tier-head { flex: 1 1 260px; min-width: 0; }
         .tier-title { font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--mb-text-primary); }
         .tier-sub { font-size: 13px; color: var(--mb-text-secondary); line-height: 1.4; }
         .tier-chip {
           display: flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%;
-          margin-top: 12px; padding: 7px 10px; border-radius: 10px;
+          margin: -4px 0 12px; padding: 7px 10px; border-radius: 10px;
           background: var(--mb-bg-surface); border: 1px solid var(--mb-border-soft);
           font-size: 12.5px; color: var(--mb-text-secondary);
         }
@@ -833,21 +941,31 @@ const Clinic = () => {
           color: var(--mb-primary); font-size: 14px; font-weight: 600; text-decoration: none;
         }
         .call-outline:hover { background: var(--mb-lime-soft); color: var(--mb-primary-hover); }
-        .svc-cat { margin-top: 14px; }
-        .svc-cat-head {
-          display: flex; align-items: center; gap: 8px; margin-bottom: 2px;
-          font-size: 13px; font-weight: 700; color: var(--mb-text-primary);
+        .svc-cat { border-top: 1px solid #D8EEE5; }
+        .tier-org .svc-cat { border-top-color: #E9E2D4; }
+        .svc-cat-toggle {
+          width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 0;
+          background: none; border: none; cursor: pointer; text-align: left; font: inherit; color: var(--mb-text-primary);
         }
         .svc-cat-chip {
-          width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+          width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
           background: var(--mb-lime-soft); color: var(--mb-primary);
         }
         .tier-org .svc-cat-chip { background: #F1ECE0; color: var(--mb-text-secondary); }
-        .services-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0 24px;
+        .svc-cat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .svc-cat-label { font-size: 14px; font-weight: 700; line-height: 1.3; }
+        .svc-cat-count { font-weight: 500; color: var(--mb-text-secondary); }
+        .svc-cat-preview {
+          font-size: 12.5px; color: var(--mb-text-secondary); line-height: 1.4;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .svc { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; }
+        .svc-cat-chev { flex-shrink: 0; color: var(--mb-text-secondary); transition: transform 0.2s ease; }
+        .services-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+          gap: 0 24px; padding: 0 0 8px 38px;
+        }
+        .svc { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; }
         .svc .tick {
           width: 22px; height: 22px; border-radius: 7px;
           background: var(--mb-lime-soft); color: var(--mb-primary);
@@ -876,18 +994,19 @@ const Clinic = () => {
         .notice-340b a { color: var(--mb-primary); text-decoration: underline; }
         .notice-340b a:hover { color: var(--mb-primary-hover); }
         .pharm-hint { font-size: 13px; color: var(--mb-text-secondary); line-height: 1.45; margin-top: 2px; text-wrap: pretty; }
-        .text-link {
-          display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
-          background: none; border: none; padding: 0; cursor: pointer;
-          font: inherit; font-size: 14px; font-weight: 600; color: var(--mb-primary);
+        .see-all {
+          margin-top: 14px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+          min-height: 48px; border-radius: 12px; border: 1px solid var(--mb-border); background: var(--mb-bg-surface);
+          color: var(--mb-primary); font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
         }
-        .text-link:hover { color: var(--mb-primary-hover); }
+        .see-all:hover { background: var(--mb-bg-surface-hover); color: var(--mb-primary-hover); }
 
         /* Location / pharmacy rows */
         .loc-header {
           display: flex; align-items: baseline; justify-content: space-between;
           gap: 12px; flex-wrap: wrap; margin-bottom: 6px;
         }
+        .loc-summary { font-size: 13px; color: var(--mb-text-secondary); margin-bottom: 2px; }
         .loc-sort { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--mb-text-secondary); }
         .loc {
           position: relative; display: flex; align-items: center; gap: 12px;
