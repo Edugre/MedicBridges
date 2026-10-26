@@ -4,4 +4,5 @@ export * from './resources';
 export * from './services';
 export * from './medications';
 export * from './reports';
+export * from './clinicRegistrations';
 export * from './geocode';

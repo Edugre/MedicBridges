@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from api import __version__
 from api.config import get_settings
 from api.errors import APIError, InvalidCoordinatesError
-from api.routers import admin, medications, reports, resources
+from api.routers import admin, clinic_registrations, medications, reports, resources
 from api.schemas.common import HealthResponse
 
 app = FastAPI(
@@ -72,4 +72,5 @@ app.include_router(resources.router)
 app.include_router(resources.catalog_router)
 app.include_router(medications.router)
 app.include_router(reports.router)
+app.include_router(clinic_registrations.router)
 app.include_router(admin.router)
