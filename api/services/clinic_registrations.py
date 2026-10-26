@@ -151,6 +151,14 @@ def send_notification(settings: Settings, row: dict, reference: str) -> None:
             headers={"Authorization": f"Bearer {settings.resend_api_key}"},
             timeout=_TIMEOUT,
         )
-        resp.raise_for_status()
     except Exception:  # noqa: BLE001 — the row is saved; don't surface email failures
         log.exception("clinic registration %s: notification email failed", reference)
+        return
+
+    if resp.is_success:
+        log.info("clinic registration %s: notification email sent (resend id %s)",
+                 reference, resp.json().get("id"))
+    else:
+        # Resend explains rejections in the body (e.g. unverified sender/recipient).
+        log.error("clinic registration %s: notification email rejected: %s %s",
+                  reference, resp.status_code, resp.text[:500])
