@@ -3,10 +3,12 @@
 Supports only the query surface the services actually call:
   rpc(name, params).execute()
   table(name).select(...).in_/eq/contains/order/limit/range(...).execute()
+  table(name).insert(row | rows).execute()   (rows are recorded on the client)
 """
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Callable
 
 
@@ -18,11 +20,18 @@ class FakeResponse:
 
 class FakeQuery:
     def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self._store = rows
         self._rows = list(rows)
         self._limit: int | None = None
         self._range: tuple[int, int] | None = None
 
     def select(self, *_args: Any, **_kwargs: Any) -> "FakeQuery":
+        return self
+
+    def insert(self, data: dict[str, Any] | list[dict[str, Any]]) -> "FakeQuery":
+        new = [{"id": str(uuid.uuid4()), **r} for r in (data if isinstance(data, list) else [data])]
+        self._store.extend(new)
+        self._rows = new
         return self
 
     def eq(self, field: str, value: Any) -> "FakeQuery":
@@ -73,7 +82,7 @@ class FakeClient:
         self._rpcs = rpcs or {}
 
     def table(self, name: str) -> FakeQuery:
-        return FakeQuery(self._tables.get(name, []))
+        return FakeQuery(self._tables.setdefault(name, []))
 
     def from_(self, name: str) -> FakeQuery:
         return self.table(name)

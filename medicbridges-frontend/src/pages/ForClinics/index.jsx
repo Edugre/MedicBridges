@@ -1,7 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight, TrendingUp, Users, Shield, Target, Activity, MapPin } from 'lucide-react';
 import { useLang } from '../../context/LangContext';
+
+// Paid plans (Featured / Partner) are hidden until billing exists.
+const PAID_PLANS_ENABLED = false;
 
 const CONTENT = {
   en: {
@@ -24,11 +26,11 @@ const CONTENT = {
       { Icon: Shield, h: 'Medicaid Specialization', p: 'Built exclusively for Medicaid, sliding-scale, and uninsured patients.' },
       { Icon: Target, h: 'Pre-Screened Leads', p: 'Patients are matched to your eligibility criteria before they arrive.' },
       { Icon: Users, h: 'Community Trust', p: 'Built with patient interviews and community input.' },
-      { Icon: Activity, h: 'No Long-Term Contracts', p: 'Start with a free listing. Upgrade when you see results.' },
+      { Icon: Activity, h: 'No Long-Term Contracts', p: 'Start with a free listing. No commitment — leave anytime.' },
       { Icon: TrendingUp, h: 'Analytics Dashboard', p: 'Track profile views, patient connections, and conversion rates.' },
     ],
     pricingTitle: 'Transparent Pricing',
-    pricingSub: "Start free. Upgrade when you're ready. No long-term contracts, ever.",
+    pricingSub: 'Listing your clinic is free. No credit card, no long-term contracts, ever.',
     mostPopular: 'Most Popular for FQHCs',
     perMo: '/mo',
     plans: [
@@ -57,11 +59,11 @@ const CONTENT = {
       { Icon: Shield, h: 'Especialización en Medicaid', p: 'Creado exclusivamente para pacientes de Medicaid, escala móvil y sin seguro.' },
       { Icon: Target, h: 'Contactos Pre-Evaluados', p: 'Los pacientes se emparejan con tus criterios de elegibilidad antes de llegar.' },
       { Icon: Users, h: 'Confianza de la Comunidad', p: 'Creado con entrevistas a pacientes y aportes de la comunidad.' },
-      { Icon: Activity, h: 'Sin Contratos a Largo Plazo', p: 'Comienza con una publicación gratuita. Mejora tu plan cuando veas resultados.' },
+      { Icon: Activity, h: 'Sin Contratos a Largo Plazo', p: 'Comienza con una publicación gratuita. Sin compromiso — cancela cuando quieras.' },
       { Icon: TrendingUp, h: 'Panel de Análisis', p: 'Sigue las vistas de perfil, las conexiones con pacientes y las tasas de conversión.' },
     ],
     pricingTitle: 'Precios Transparentes',
-    pricingSub: 'Comienza gratis. Mejora tu plan cuando estés listo. Sin contratos a largo plazo, nunca.',
+    pricingSub: 'Publicar tu clínica es gratis. Sin tarjeta de crédito, sin contratos a largo plazo, nunca.',
     mostPopular: 'El Más Popular para FQHCs',
     perMo: '/mes',
     plans: [
@@ -167,8 +169,8 @@ const ForClinics = () => {
             <p style={{ fontSize: '1.15rem', color: 'var(--mb-text-secondary)' }}>{t.pricingSub}</p>
           </div>
 
-          <div className="fc-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-            {t.plans.map((plan) => (
+          <div className="fc-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', ...(PAID_PLANS_ENABLED ? {} : { maxWidth: '420px', margin: '0 auto' }) }}>
+            {t.plans.filter((plan) => PAID_PLANS_ENABLED || !plan.price.startsWith('$')).map((plan) => (
               <div
                 key={plan.name}
                 className={`mb-bento-card pricing-card${plan.featured ? ' featured-card' : ''}`}

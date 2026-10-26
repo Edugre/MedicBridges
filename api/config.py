@@ -30,6 +30,18 @@ class Settings(BaseSettings):
     # environment where the report endpoint is publicly reachable.
     turnstile_secret_key: str = Field(default="", alias="TURNSTILE_SECRET_KEY")
 
+    # --- Email notifications (Resend) for clinic registrations ---
+    # When RESEND_API_KEY is empty, registrations are still saved but no email
+    # is sent. onboarding@resend.dev only delivers to the Resend account owner's
+    # address; verify a domain in Resend to send from your own address.
+    resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
+    clinic_registration_notify_email: str = Field(
+        default="Medibridgepro@gmail.com", alias="CLINIC_REGISTRATION_NOTIFY_EMAIL"
+    )
+    notify_from_email: str = Field(
+        default="MedicBridges <onboarding@resend.dev>", alias="NOTIFY_FROM_EMAIL"
+    )
+
     # --- Medication source ('cache' = Postgres-backed typeahead) ---
     med_data_source: str = Field(default="cache", alias="MED_DATA_SOURCE")
 
