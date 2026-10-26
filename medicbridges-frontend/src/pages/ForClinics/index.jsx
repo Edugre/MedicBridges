@@ -1,7 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight, TrendingUp, Users, Shield, Target, Activity, MapPin } from 'lucide-react';
 import { useLang } from '../../context/LangContext';
+
+// Paid plans (Featured / Partner) are hidden until billing exists.
+const PAID_PLANS_ENABLED = false;
 
 const CONTENT = {
   en: {
@@ -167,8 +169,8 @@ const ForClinics = () => {
             <p style={{ fontSize: '1.15rem', color: 'var(--mb-text-secondary)' }}>{t.pricingSub}</p>
           </div>
 
-          <div className="fc-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
-            {t.plans.map((plan) => (
+          <div className="fc-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', ...(PAID_PLANS_ENABLED ? {} : { maxWidth: '420px', margin: '0 auto' }) }}>
+            {t.plans.filter((plan) => PAID_PLANS_ENABLED || !plan.price.startsWith('$')).map((plan) => (
               <div
                 key={plan.name}
                 className={`mb-bento-card pricing-card${plan.featured ? ' featured-card' : ''}`}

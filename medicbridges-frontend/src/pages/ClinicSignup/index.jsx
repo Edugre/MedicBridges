@@ -134,6 +134,8 @@ const PATIENT_KEYS = ['uninsured', 'medicaid', 'medicare', 'sliding_scale', 'mar
 const DISPENSE_KEYS = ['low_cost', '340b', 'no'];
 const LANGUAGE_KEYS = ['en', 'es', 'ht', 'pt', 'other'];
 const PLAN_KEYS = ['basic', 'featured', 'partner'];
+// Paid plans (Featured / Partner) are hidden until billing exists.
+const PAID_PLANS_ENABLED = false;
 
 const initialForm = {
   clinic_name: '', clinic_type: '', zip: '', phone: '', address: '', website: '',
@@ -320,7 +322,7 @@ const ClinicSignup = () => {
 
           <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', marginTop: '3rem', borderBottom: '1px solid var(--mb-border)', paddingBottom: '0.5rem' }}>{t.choosePlan}</h2>
           <div className="plan-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem' }}>
-            {t.plans.map((p, i) => (
+            {t.plans.map((p, i) => (PAID_PLANS_ENABLED || PLAN_KEYS[i] === 'basic') && (
               <label key={PLAN_KEYS[i]} className="mb-bento-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer', ...(form.plan === PLAN_KEYS[i] ? { border: '1px solid var(--mb-accent)' } : {}) }}>
                 <input type="radio" name="plan" checked={form.plan === PLAN_KEYS[i]} onChange={() => set({ plan: PLAN_KEYS[i] })} style={{ marginTop: '0.25rem' }} />
                 <div>
