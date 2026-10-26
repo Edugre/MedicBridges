@@ -88,8 +88,10 @@ def test_send_notification_posts_to_resend(monkeypatch):
     calls = []
 
     class _Resp:
-        def raise_for_status(self):
-            pass
+        is_success = True
+
+        def json(self):
+            return {"id": "email_123"}
 
     monkeypatch.setattr(
         clinic_registrations.httpx, "post", lambda url, **kw: calls.append((url, kw)) or _Resp()
@@ -116,3 +118,20 @@ def test_send_notification_swallows_errors(monkeypatch):
 
     monkeypatch.setattr(clinic_registrations.httpx, "post", boom)
     clinic_registrations.send_notification(Settings(RESEND_API_KEY="k"), {"clinic_name": "c"}, "X")  # type: ignore[call-arg]
+
+
+def test_send_notification_logs_rejection(monkeypatch, caplog):
+    class _Resp:
+        is_success = False
+        status_code = 403
+        text = '{"message":"You can only send testing emails to your own email address"}'
+
+    monkeypatch.setattr(clinic_registrations.httpx, "post", lambda *a, **k: _Resp())
+    clinic_registrations.send_notification(Settings(RESEND_API_KEY="k"), {"clinic_name": "c"}, "X")  # type: ignore[call-arg]
+    assert "403" in caplog.text and "own email address" in caplog.text
+
+
+def test_health_reports_email_configured():
+    r = TestClient(app).get("/health")
+    assert r.status_code == 200
+    assert "email_configured" in r.json()

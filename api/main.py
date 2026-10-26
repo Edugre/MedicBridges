@@ -5,6 +5,8 @@ Run locally:  uvicorn api.main:app --reload
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -16,6 +18,10 @@ from api.config import get_settings
 from api.errors import APIError, InvalidCoordinatesError
 from api.routers import admin, clinic_registrations, medications, reports, resources
 from api.schemas.common import HealthResponse
+
+# App loggers (e.g. clinic registration emails) inherit this; uvicorn's own
+# loggers don't propagate to root, so nothing is logged twice.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
 app = FastAPI(
     title="MedicBridges API",
@@ -65,6 +71,9 @@ def health() -> HealthResponse:
     return HealthResponse(
         version=__version__,
         supabase_configured=bool(_settings.base_url and _settings.supabase_anon_key),
+        email_configured=bool(
+            _settings.resend_api_key and _settings.clinic_registration_notify_email
+        ),
     )
 
 

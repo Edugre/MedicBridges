@@ -18,3 +18,4 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     version: str
     supabase_configured: bool
+    email_configured: bool = False
