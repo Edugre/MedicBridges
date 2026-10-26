@@ -110,6 +110,15 @@ class ClinicRegistrationSubmission(BaseModel):
             raise ValueError("contact_email must be a valid email address")
         return v
 
+    @field_validator("plan")
+    @classmethod
+    def _only_basic_plan(cls, v: Plan) -> Plan:
+        # Paid plans are hidden in the UI until billing exists (PAID_PLANS_ENABLED
+        # in the frontend); reject them here so they can't be recorded directly.
+        if v is not Plan.basic:
+            raise ValueError("only the basic plan is currently available")
+        return v
+
     @field_validator("zip")
     @classmethod
     def _validate_zip(cls, v: str) -> str:

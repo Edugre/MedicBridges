@@ -25,7 +25,7 @@ VALID = {
     "patients_served": ["uninsured", "medicaid"],
     "dispenses_meds": "340b",
     "languages": ["en", "es"],
-    "plan": "featured",
+    "plan": "basic",
     "lang": "en",
 }
 
@@ -72,6 +72,8 @@ def test_submit_saves_row_and_notifies(env):
         {"zip": "abc"},
         {"clinic_type": "spa"},
         {"services": ["astrology"]},
+        {"plan": "featured"},
+        {"plan": "partner"},
     ],
 )
 def test_submit_rejects_invalid(env, patch):

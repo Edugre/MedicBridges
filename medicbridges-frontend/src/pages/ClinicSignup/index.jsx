@@ -10,7 +10,7 @@ const CONTENT = {
   en: {
     badge: 'For Healthcare Providers',
     title: 'Register Your Clinic',
-    subtitle: 'Start reaching pre-screened Medicaid and uninsured patients in Miami. Get listed free — upgrade when you see results.',
+    subtitle: 'Start reaching pre-screened Medicaid and uninsured patients in Miami. Get listed for free.',
     clinicInfo: 'Clinic Information',
     nameLabel: 'Clinic / Organization Name *',
     namePlaceholder: 'e.g. Community Health Center of Miami',
@@ -51,7 +51,7 @@ const CONTENT = {
     dispenseOptions: ['Yes — free or low-cost meds available', 'Yes — 340B drug pricing program', 'No'],
     languagesSpoken: 'Languages Spoken',
     languageList: ['English', 'Spanish / Español', 'Haitian Creole', 'Portuguese', 'Other'],
-    choosePlan: 'Choose Your Plan',
+    choosePlan: 'Your Plan',
     plans: [
       { name: 'Basic (Free)', desc: 'Listed in directory, Patients can find and call you.' },
       { name: 'Featured ($99 /mo)', desc: 'Top placement, AI matching, and basic analytics.' },
@@ -69,7 +69,7 @@ const CONTENT = {
   es: {
     badge: 'Para Proveedores de Salud',
     title: 'Registra tu Clínica',
-    subtitle: 'Comienza a llegar a pacientes de Medicaid y sin seguro pre-evaluados en Miami. Publícate gratis — mejora tu plan cuando veas resultados.',
+    subtitle: 'Comienza a llegar a pacientes de Medicaid y sin seguro pre-evaluados en Miami. Publícate gratis.',
     clinicInfo: 'Información de la Clínica',
     nameLabel: 'Nombre de la Clínica / Organización *',
     namePlaceholder: 'p. ej. Centro de Salud Comunitario de Miami',
@@ -110,7 +110,7 @@ const CONTENT = {
     dispenseOptions: ['Sí — medicamentos gratuitos o de bajo costo disponibles', 'Sí — programa de precios de medicamentos 340B', 'No'],
     languagesSpoken: 'Idiomas que se Hablan',
     languageList: ['Inglés', 'Español', 'Creole Haitiano', 'Portugués', 'Otro'],
-    choosePlan: 'Elige tu Plan',
+    choosePlan: 'Tu Plan',
     plans: [
       { name: 'Básico (Gratis)', desc: 'Aparece en el directorio; los pacientes pueden encontrarte y llamarte.' },
       { name: 'Destacado ($99 /mes)', desc: 'Ubicación superior, coincidencia con IA y análisis básicos.' },
