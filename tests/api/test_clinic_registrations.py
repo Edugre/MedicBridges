@@ -102,7 +102,7 @@ def test_send_notification_posts_to_resend(monkeypatch):
 
     [(url, kw)] = calls
     assert url == "https://api.resend.com/emails"
-    assert kw["json"]["to"] == ["Medibridgepro@gmail.com"]
+    assert kw["json"]["to"] == ["medibridgepro@gmail.com"]
     assert kw["json"]["reply_to"] == "ana@example.org"
     assert "&lt;b&gt;Clinic&lt;/b&gt;" in kw["json"]["html"]  # escaped
 

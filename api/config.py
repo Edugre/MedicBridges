@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # address; verify a domain in Resend to send from your own address.
     resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
     clinic_registration_notify_email: str = Field(
-        default="Medibridgepro@gmail.com", alias="CLINIC_REGISTRATION_NOTIFY_EMAIL"
+        default="medibridgepro@gmail.com", alias="CLINIC_REGISTRATION_NOTIFY_EMAIL"
     )
     notify_from_email: str = Field(
         default="MedicBridges <onboarding@resend.dev>", alias="NOTIFY_FROM_EMAIL"
