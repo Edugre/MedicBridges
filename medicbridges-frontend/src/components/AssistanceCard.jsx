@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, HandCoins, ExternalLink } from 'lucide-react';
 import { formatAddress, formatIsoDate, safeHttpUrl } from '../lib/format';
 import { useLang } from '../context/LangContext';
@@ -44,8 +45,10 @@ const actionBase = {
  * @param {{ facility: import('../api/resources').AssistanceFacility, width?: string }} props
  */
 const AssistanceCard = ({ facility, width }) => {
+  const navigate = useNavigate();
   const { lang } = useLang();
   const t = CONTENT[lang];
+  const openDetail = () => navigate(`/assistance/${encodeURIComponent(facility.facility_id)}`);
   const address = formatAddress({ ...facility, address_line_1: facility.address });
   const applyUrl = safeHttpUrl(facility.application_url);
   const policyUrl = safeHttpUrl(facility.policy_url);
@@ -56,7 +59,18 @@ const AssistanceCard = ({ facility, width }) => {
   return (
     <div
       className="mb-clinic-card-v2"
+      onClick={openDetail}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openDetail();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       style={{
+        cursor: 'pointer',
         background: '#fff',
         border: '1px solid var(--mb-border)',
         borderRadius: '16px',
@@ -112,7 +126,7 @@ const AssistanceCard = ({ facility, width }) => {
       {policyLine && (
         <div style={{ fontSize: '11.5px', color: 'var(--mb-text-muted)' }}>
           {policyUrl ? (
-            <a href={policyUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+            <a href={policyUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'underline' }}>
               {policyLine}
             </a>
           ) : policyLine}
@@ -122,6 +136,7 @@ const AssistanceCard = ({ facility, width }) => {
       <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
         <a
           href={facility.phone ? `tel:${facility.phone}` : undefined}
+          onClick={(e) => e.stopPropagation()}
           aria-disabled={!facility.phone}
           style={{
             ...actionBase,
@@ -138,6 +153,7 @@ const AssistanceCard = ({ facility, width }) => {
           href={applyUrl || undefined}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           aria-disabled={!applyUrl}
           style={{
             ...actionBase,
