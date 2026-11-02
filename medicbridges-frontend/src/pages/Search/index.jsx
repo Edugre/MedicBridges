@@ -19,6 +19,7 @@ import AssistanceCard from '../../components/AssistanceCard';
 import SearchMap from '../../components/SearchMap';
 import SearchLoadingModal from '../../components/SearchLoadingModal';
 import { useLang } from '../../context/LangContext';
+import { useSearchModal } from '../../context/SearchModalContext';
 
 const CONTENT = {
   en: {
@@ -40,6 +41,8 @@ const CONTENT = {
     autoExpand: (from, to) => `No clinics within ${from} km — showing the nearest within ${to} km.`,
     filterPlaceholder: 'Filter by name or service',
     findCareNear: (label) => `Find care near ${label}`,
+    change: 'Change',
+    changeLocation: 'Change location or ZIP',
     searching: 'Searching…',
     clinicsFoundSorted: (n) => `${n} clinic${n === 1 ? '' : 's'} found · sorted by distance`,
     clinicsFound: (n) => `${n} clinic${n === 1 ? '' : 's'} found`,
@@ -77,6 +80,8 @@ const CONTENT = {
     autoExpand: (from, to) => `Sin clínicas dentro de ${from} km — mostrando las más cercanas dentro de ${to} km.`,
     filterPlaceholder: 'Filtrar por nombre o servicio',
     findCareNear: (label) => `Buscar atención cerca de ${label}`,
+    change: 'Cambiar',
+    changeLocation: 'Cambiar ubicación o código postal',
     searching: 'Buscando…',
     clinicsFoundSorted: (n) => `${n} clínica${n === 1 ? '' : 's'} encontrada${n === 1 ? '' : 's'} · ordenadas por distancia`,
     clinicsFound: (n) => `${n} clínica${n === 1 ? '' : 's'} encontrada${n === 1 ? '' : 's'}`,
@@ -134,6 +139,7 @@ const Search = () => {
   const lastRouteKey = useRef(routerLocation.key);
   const { coords, error: geoError, usingFallback, requestLocation, setManualCoords } = useGeolocation(initialCenter);
   const { lang } = useLang();
+  const { openLocationPrompt } = useSearchModal();
   const t = CONTENT[lang];
 
   const [services, setServices] = useState([]);
@@ -363,6 +369,9 @@ const Search = () => {
 
   const desert = data?.meta?.healthcare_desert;
   const locationLabel = coords.label || (usingFallback ? 'Miami, FL' : t.fallbackArea);
+  // Reopens the location prompt on the picker so a ZIP or location that was
+  // already chosen can be replaced. Picking a new one re-runs this search.
+  const openChangeLocation = () => openLocationPrompt({ fresh: true });
 
   const fitPadding = isMobile
     ? { top: 120, bottom: 290, left: 40, right: 40 }
@@ -663,6 +672,13 @@ const Search = () => {
               <div style={{ fontSize: '12.5px', color: 'var(--mb-text-muted)', marginTop: '2px' }}>
                 {loading ? t.searching : t.clinicsFoundSorted(clinics.length)}
               </div>
+              <button
+                type="button"
+                onClick={openChangeLocation}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '8px', padding: '0', background: 'none', border: 'none', fontSize: '13px', fontWeight: 600, color: 'var(--mb-primary)', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '3px' }}
+              >
+                <MapPin size={13} /> {t.changeLocation}
+              </button>
               <div style={{ marginTop: '12px' }}>{searchField}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '12px' }}>
                 {renderChips()}
@@ -788,8 +804,20 @@ const Search = () => {
               <span style={{ display: 'block', width: '38px', height: '4px', borderRadius: '999px', background: '#D8D2C4', margin: '0 auto' }} />
             </button>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px 10px' }}>
-              <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)' }}>
-                {loading ? t.searching : t.clinicsFound(clinics.length)}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--mb-text-primary)' }}>
+                  {loading ? t.searching : t.clinicsFound(clinics.length)}
+                </div>
+                <button
+                  type="button"
+                  onClick={openChangeLocation}
+                  aria-label={t.changeLocation}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px', maxWidth: '200px', marginTop: '3px', padding: '4px 0', background: 'none', border: 'none', fontSize: '12.5px', color: 'var(--mb-text-secondary)', cursor: 'pointer' }}
+                >
+                  <MapPin size={12} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{locationLabel}</span>
+                  <span style={{ flexShrink: 0, fontWeight: 600, color: 'var(--mb-primary)', textDecoration: 'underline', textUnderlineOffset: '3px' }}>{t.change}</span>
+                </button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ background: '#F1ECE0', borderRadius: '999px', padding: '3px', display: 'flex', gap: '2px' }}>
