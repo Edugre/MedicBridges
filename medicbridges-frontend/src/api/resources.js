@@ -114,3 +114,32 @@ export function getSite(siteId, { signal } = {}) {
 export function listAssistanceFacilities({ zip, city, signal } = {}) {
   return apiGet('/api/v1/resources/assistance', { signal, params: { zip, city } });
 }
+
+/**
+ * One published assistance-program facility with all its published programs.
+ * Rejects with a 404 ApiError when the facility is not published.
+ *
+ * @typedef {object} AssistanceProgram
+ * @property {string} program_id
+ * @property {string} program_name
+ * @property {string|null} short_description
+ * @property {string|null} public_copy
+ * @property {string|null} application_url
+ * @property {string|null} policy_url
+ * @property {string|null} policy_revised
+ * @property {string|null} last_checked
+ *
+ * @typedef {object} AssistanceFacilityDetail
+ * @property {string} facility_id
+ * @property {string} name
+ * @property {string|null} category
+ * @property {string|null} address
+ * @property {string|null} city
+ * @property {string|null} state
+ * @property {string|null} zip
+ * @property {string|null} phone
+ * @property {AssistanceProgram[]} programs
+ */
+export function getAssistanceFacility(facilityId, { signal } = {}) {
+  return apiGet(`/api/v1/resources/assistance/${encodeURIComponent(facilityId)}`, { signal });
+}

@@ -17,6 +17,7 @@ from api.deps import get_anon_client
 from api.errors import InvalidCoordinatesError, NotFoundError, RadiusExceedsMaxError
 from api.geo import coordinates_valid
 from api.schemas.resources import (
+    AssistanceFacilityDetailOut,
     AssistanceFacilityOut,
     NearbyResponse,
     OrganizationOut,
@@ -124,6 +125,22 @@ def assistance_facilities(
     No coordinates exist for these, so there is no radius or distance.
     """
     return assistance.list_assistance_facilities(client, zip_code=zip, city=city)
+
+
+@router.get("/assistance/{facility_id}", response_model=AssistanceFacilityDetailOut)
+def assistance_facility_detail(
+    facility_id: str,
+    client: Client = Depends(get_anon_client),
+) -> AssistanceFacilityDetailOut:
+    """One published assistance-program facility with its programs.
+
+    Only facilities with a publishable link are visible (the view and RLS
+    enforce this); anything else is a 404.
+    """
+    facility = assistance.get_assistance_facility(client, facility_id)
+    if facility is None:
+        raise NotFoundError("Assistance facility not found", resource="assistance_facility")
+    return facility
 
 
 # Service taxonomy lives under its own top-level path but is part of discovery.
