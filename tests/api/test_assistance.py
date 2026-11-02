@@ -91,3 +91,32 @@ def test_no_location_returns_nothing(client_for):
     r = client_for([_row()]).get(URL)
     assert r.status_code == 200
     assert r.json() == []
+
+
+DETAIL = "/api/v1/resources/assistance/"
+
+
+def test_detail_returns_facility_with_both_programs_and_hides_internal_fields(client_for):
+    rows = [
+        _row(program_id="jackson_prime", program_name="Jackson Prime",
+             short_description="Sliding-fee assistance.", caveat="internal only"),
+        _row(program_id="jackson_jfap", program_name="Jackson Financial Assistance Program (JFAP)",
+             short_description="Post-service review."),
+        _row(facility_id="OTHER", facility_name="Other Hospital"),
+    ]
+    r = client_for(rows).get(DETAIL + "JHS-001")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["result_type"] == "assistance_facility_detail"
+    assert body["name"] == "Jackson Memorial Hospital"
+    assert [p["program_id"] for p in body["programs"]] == ["jackson_jfap", "jackson_prime"]
+    flat = str(body)
+    for absent in ("fpl_max_percent", "eligibility_rules", "caveat", "internal only",
+                   "latitude", "distance_m"):
+        assert absent not in flat
+
+
+def test_detail_unknown_or_unpublished_is_404(client_for):
+    # An unpublished facility never appears in the public view, so it is a 404.
+    r = client_for([_row()]).get(DETAIL + "jhs-not-published")
+    assert r.status_code == 404

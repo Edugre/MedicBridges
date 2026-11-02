@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Clinic from './pages/Clinic';
+import Assistance from './pages/Assistance';
 import ClinicSignup from './pages/ClinicSignup';
 import ForClinics from './pages/ForClinics';
 import Historias from './pages/Historias';
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/clinic/:id" element={<Clinic />} />
+                <Route path="/assistance/:facilityId" element={<Assistance />} />
                 <Route path="/clinic/:id/no-website" element={<NotFound variant="website" />} />
                 <Route path="/clinic-signup" element={<ClinicSignup />} />
                 <Route path="/for-clinics" element={<ForClinics />} />

@@ -141,3 +141,35 @@ class AssistanceFacilityOut(BaseModel):
     policy_url: str | None = None
     policy_revised: str | None = None
     last_checked: str | None = None
+
+
+class AssistanceProgramOut(BaseModel):
+    """One published assistance program at a facility (patient-facing fields only)."""
+
+    program_id: str
+    program_name: str
+    short_description: str | None = None
+    public_copy: str | None = None
+    application_url: str | None = None
+    policy_url: str | None = None
+    policy_revised: str | None = None
+    last_checked: str | None = None
+
+
+class AssistanceFacilityDetailOut(BaseModel):
+    """Detail for one assistance-program facility, with all its published programs.
+
+    Read from v_facility_assistance_public only. Like the list item, it has no
+    coordinates, percentages, eligibility rules, or internal caveats.
+    """
+
+    result_type: Literal["assistance_facility_detail"] = "assistance_facility_detail"
+    facility_id: str
+    name: str
+    category: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip: str | None = None
+    phone: str | None = None
+    programs: list[AssistanceProgramOut]

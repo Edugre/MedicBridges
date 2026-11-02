@@ -12,7 +12,11 @@ from typing import Any
 from scripts._supabase_py import Client
 
 from api.errors import UpstreamError
-from api.schemas.resources import AssistanceFacilityOut
+from api.schemas.resources import (
+    AssistanceFacilityDetailOut,
+    AssistanceFacilityOut,
+    AssistanceProgramOut,
+)
 
 VIEW = "v_facility_assistance_public"
 
@@ -75,3 +79,60 @@ def list_assistance_facilities(
         if _matches(row, wanted_zip, wanted_city)
     ]
     return sorted(out, key=lambda f: (f.name.lower(), f.program_name.lower()))
+
+
+# Detail columns: still patient-facing only (no percentages, rules or caveat).
+_DETAIL_COLUMNS = (
+    "facility_id,facility_name,category,address,city,state,zip,phone,"
+    "program_id,program_name,short_description,public_copy,application_url,"
+    "policy_url,policy_revised,last_checked"
+)
+
+
+def _iso(value: Any) -> str | None:
+    return str(value) if value else None
+
+
+def get_assistance_facility(
+    client: Client, facility_id: str
+) -> AssistanceFacilityDetailOut | None:
+    """One published facility with its programs, or None if it is not published."""
+    try:
+        resp = (
+            client.table(VIEW)
+            .select(_DETAIL_COLUMNS)
+            .eq("facility_id", facility_id)
+            .execute()
+        )
+    except Exception as exc:  # supabase/postgrest client errors
+        raise UpstreamError(f"select {VIEW} failed: {exc}") from exc
+
+    rows = resp.data or []
+    if not rows:
+        return None
+    first = rows[0]
+    programs = [
+        AssistanceProgramOut(
+            program_id=row["program_id"],
+            program_name=row["program_name"],
+            short_description=row.get("short_description"),
+            public_copy=row.get("public_copy"),
+            application_url=row.get("application_url"),
+            policy_url=row.get("policy_url"),
+            policy_revised=_iso(row.get("policy_revised")),
+            last_checked=_iso(row.get("last_checked")),
+        )
+        for row in rows
+    ]
+    programs.sort(key=lambda p: p.program_name.lower())
+    return AssistanceFacilityDetailOut(
+        facility_id=first["facility_id"],
+        name=first["facility_name"],
+        category=first.get("category"),
+        address=first.get("address"),
+        city=first.get("city"),
+        state=(first.get("state") or "").strip() or None,
+        zip=first.get("zip"),
+        phone=first.get("phone"),
+        programs=programs,
+    )
