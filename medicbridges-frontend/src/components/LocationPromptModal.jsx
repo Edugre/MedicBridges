@@ -71,8 +71,8 @@ const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [href], [tabin
 
 // Reopen straight to the confirmed state when a location was already picked
 // this session, so returning patients can go with one click.
-function initialState() {
-  const saved = loadSearchLocation();
+function initialState(fresh = false) {
+  const saved = fresh ? null : loadSearchLocation();
   if (saved) {
     return {
       mode: 'found',
@@ -150,12 +150,12 @@ const NOTICE_STYLE = {
   marginTop: '-6px',
 };
 
-function LocationPromptDialog({ onClose, onConfirm }) {
+function LocationPromptDialog({ onClose, onConfirm, fresh = false }) {
   const { lang } = useLang();
   const t = CONTENT[lang];
   const isMobile = useIsMobile();
 
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useState(() => initialState(fresh));
   const { mode, zip, error, lookingUp, place, via } = state;
   const zipValid = ZIP_RE.test(zip);
 
@@ -639,7 +639,7 @@ function LocationPromptDialog({ onClose, onConfirm }) {
  * SearchLoadingModal while the query runs.
  */
 const LocationPromptModal = () => {
-  const { isLocationOpen, closeModal } = useSearchModal();
+  const { isLocationOpen, freshLocation, closeModal } = useSearchModal();
   const navigate = useNavigate();
 
   if (!isLocationOpen) return null;
@@ -651,7 +651,7 @@ const LocationPromptModal = () => {
   }
 
   // Mounted fresh on every open so the prompt starts from a clean state.
-  return <LocationPromptDialog onClose={closeModal} onConfirm={handleConfirm} />;
+  return <LocationPromptDialog onClose={closeModal} onConfirm={handleConfirm} fresh={freshLocation} />;
 };
 
 export default LocationPromptModal;

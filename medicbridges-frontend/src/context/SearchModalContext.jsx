@@ -8,20 +8,27 @@ const SearchModalContext = createContext(null);
 // after which the Search page runs the query behind SearchLoadingModal.
 export function SearchModalProvider({ children }) {
   const [step, setStep] = useState(null);
+  // True when the prompt was opened to *change* a location that is already
+  // saved: it then starts on the picker instead of the confirmed state.
+  const [freshLocation, setFreshLocation] = useState(false);
 
   const openModal = useCallback(() => setStep('options'), []);
-  const openLocationPrompt = useCallback(() => setStep('location'), []);
+  const openLocationPrompt = useCallback((options) => {
+    setFreshLocation(options?.fresh === true);
+    setStep('location');
+  }, []);
   const closeModal = useCallback(() => setStep(null), []);
 
   const value = useMemo(
     () => ({
       isOpen: step === 'options',
       isLocationOpen: step === 'location',
+      freshLocation,
       openModal,
       openLocationPrompt,
       closeModal,
     }),
-    [step, openModal, openLocationPrompt, closeModal],
+    [step, freshLocation, openModal, openLocationPrompt, closeModal],
   );
 
   return (
